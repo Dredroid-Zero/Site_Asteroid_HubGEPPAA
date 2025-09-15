@@ -9,70 +9,73 @@
     </form>
 </div>
 
-<div class="config-box mb-4">
-    <form method="GET" action="{{ url_for('minhas_tabelas') }}" class="row g-3 align-items-center">
-        <div class="col-auto">
-            <label for="active_table_selector" class="col-form-label"><b>Visualizando a Tabela:</b></label>
-        </div>
-        <div class="col-auto">
-            <select class="form-select" name="active_table" id="active_table_selector" onchange="this.form.submit()">
-                {% for name in saved_tables_names %}
-                    <option value="{{ name }}" {% if name == active_table_name %}selected{% endif %}>{{ name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </form>
-</div>
+<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="pills-view-tab" data-bs-toggle="pill" data-bs-target="#pills-view" type="button" role="tab">Exibir Tabelas</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pills-create-tab" data-bs-toggle="pill" data-bs-target="#pills-create" type="button" role="tab">Criar Nova Tabela</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pills-manage-tab" data-bs-toggle="pill" data-bs-target="#pills-manage" type="button" role="tab">Gerenciar Tabela Ativa</button>
+    </li>
+</ul>
 
-<div class="config-box mb-5">
-    <h3 class="mb-3">Gerenciar Tabela Ativa</h3>
-    <div class="accordion" id="managementAccordion">
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseManageNames">
-                    Criar / Renomear Tabelas
-                </button>
-            </h2>
-            <div id="collapseManageNames" class="accordion-collapse collapse">
-                <div class="accordion-body">
-                    <form action="/create-table" method="POST" class="row g-3 align-items-center mb-3">
-                        <div class="col-auto"><label>Nova Tabela:</label></div>
-                        <div class="col-auto"><input type="text" name="new_name" class="form-control form-control-sm" placeholder="Nome da nova tabela"></div>
-                        <div class="col-auto"><button type="submit" class="btn btn-primary btn-sm">Criar</button></div>
-                    </form>
-                    <hr>
-                    <form action="/rename-table" method="POST" class="row g-3 align-items-center">
-                         <div class="col-auto"><label>Renomear '{{ active_table_name }}' para:</label></div>
-                         <div class="col-auto"><input type="text" name="new_name" class="form-control form-control-sm" placeholder="Novo nome"></div>
-                         <div class="col-auto"><button type="submit" class="btn btn-secondary btn-sm">Renomear</button></div>
-                    </form>
-                </div>
+<div class="tab-content config-box" id="pills-tabContent">
+    <div class="tab-pane fade show active" id="pills-view" role="tabpanel">
+        <form method="GET" action="{{ url_for('minhas_tabelas') }}" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="active_table_selector" class="col-form-label"><b>Visualizando a Tabela:</b></label>
             </div>
+            <div class="col-auto">
+                <select class="form-select" name="active_table" id="active_table_selector" onchange="this.form.submit()">
+                    {% for name in saved_tables_names %}
+                        <option value="{{ name }}" {% if name == active_table_name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <div class="tab-pane fade" id="pills-create" role="tabpanel">
+        <h4>Criar uma Nova Tabela</h4>
+        <form action="/create-table" method="POST" class="row g-3 align-items-center mt-2">
+            <div class="col-auto"><input type="text" name="new_name" class="form-control" placeholder="Nome da nova tabela" required></div>
+            <div class="col-auto"><button type="submit" class="btn btn-primary">Criar</button></div>
+        </form>
+    </div>
+
+    <div class="tab-pane fade" id="pills-manage" role="tabpanel">
+        <h4>Gerenciando a Tabela: <strong>{{ active_table_name }}</strong></h4>
+        <hr>
+        <div class="mb-3">
+            <h5>Renomear Tabela</h5>
+            <form action="/rename-table" method="POST" class="row g-3 align-items-center">
+                 <div class="col-auto"><input type="text" name="new_name" class="form-control" placeholder="Novo nome para '{{ active_table_name }}'" required></div>
+                 <div class="col-auto"><button type="submit" class="btn btn-secondary">Renomear</button></div>
+            </form>
         </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActions">
-                    Ações Destrutivas
-                </button>
-            </h2>
-            <div id="collapseActions" class="accordion-collapse collapse">
-                <div class="accordion-body">
-                    <div id="delete-mode-controls" class="mb-3 border-bottom pb-3">
-                         <p class="mb-1"><b>Excluir Linhas:</b> Entra no modo de edição para remover linhas específicas da tabela '{{ active_table_name }}'.</p>
-                        <button id="enter-edit-mode" class="btn btn-danger btn-sm">Editar Linhas</button>
-                        <div id="edit-buttons" style="display: none;">
-                            <form id="delete-form" action="/delete-rows" method="POST" style="display: inline;">
-                                <input type="hidden" name="objects_to_delete" id="objects_to_delete">
-                                <button type="submit" class="btn btn-success btn-sm">Salvar Exclusões</button>
-                            </form>
-                            <button id="cancel-edit-mode" class="btn btn-secondary btn-sm">Cancelar</button>
-                        </div>
-                    </div>
-                    <form action="/delete-table" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir a tabela \'{{ active_table_name }}\'? Esta ação não pode ser desfeita.');" class="mt-3">
-                        <p class="mb-1"><b>Excluir Tabela Inteira:</b> Apaga permanentemente a tabela '{{ active_table_name }}' e todo o seu conteúdo.</p>
-                         <button type="submit" class="btn btn-danger">Excluir Tabela</button>
-                    </form>
-                </div>
+        <hr>
+        <div class="mb-3">
+             <h5>Excluir Tabela Inteira</h5>
+            <form action="/delete-table" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir a tabela \'{{ active_table_name }}\'? Esta ação não pode ser desfeita.');">
+                 <button type="submit" class="btn btn-danger">Excluir a tabela '{{ active_table_name }}'</button>
+            </form>
+        </div>
+        <hr>
+        <h5>Editar Conteúdo da Tabela</h5>
+        <div id="edit-mode-controls">
+            <button id="enter-delete-mode" class="btn btn-outline-danger">Excluir Linhas</button>
+            <button id="enter-reorder-mode" class="btn btn-outline-primary">Reordenar Linhas</button> <div id="edit-buttons" class="mt-2" style="display: none;">
+                <form id="delete-form" action="/delete-rows" method="POST" style="display: none;">
+                    <input type="hidden" name="objects_to_delete" id="objects_to_delete">
+                    <button type="submit" class="btn btn-success">Salvar Exclusões</button>
+                </form>
+                <form id="reorder-form" action="/reorder-rows" method="POST" style="display: none;">
+                    <input type="hidden" name="ordered_objects" id="ordered_objects">
+                    <button type="submit" class="btn btn-success">Salvar Ordem</button>
+                </form>
+                <button id="cancel-edit-mode" class="btn btn-secondary">Cancelar Edição</button>
             </div>
         </div>
     </div>
@@ -113,74 +116,4 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-// O JavaScript desta página permanece o mesmo da versão anterior
-document.addEventListener('DOMContentLoaded', function() {
-    const tableWrapper = document.getElementById('main-table-wrapper');
-    const table = tableWrapper ? tableWrapper.querySelector('table') : null;
-    if (!table) return;
-
-    const enterEditBtn = document.getElementById('enter-edit-mode');
-    const cancelEditBtn = document.getElementById('cancel-edit-mode');
-    const editButtonsDiv = document.getElementById('edit-buttons');
-    const deleteForm = document.getElementById('delete-form');
-    const objectsToDeleteInput = document.getElementById('objects_to_delete');
-    
-    let rowsToDelete = new Set();
-
-    if (enterEditBtn) {
-        enterEditBtn.addEventListener('click', function() {
-            this.style.display = 'none';
-            editButtonsDiv.style.display = 'block';
-            
-            table.querySelectorAll('tbody tr').forEach((row) => {
-                const objectNameCell = row.cells[0];
-                if (!objectNameCell) return;
-                const objectName = objectNameCell.textContent;
-
-                const actionCell = row.insertCell(0);
-                actionCell.style.width = '60px';
-                actionCell.style.textAlign = 'center';
-                
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'X';
-                deleteBtn.className = 'btn btn-danger btn-sm';
-
-                deleteBtn.addEventListener('click', function() {
-                    if (rowsToDelete.has(objectName)) {
-                        rowsToDelete.delete(objectName);
-                        row.style.textDecoration = '';
-                        row.style.opacity = '1';
-                    } else {
-                        rowsToDelete.add(objectName);
-                        row.style.textDecoration = 'line-through';
-                        row.style.opacity = '0.6';
-                    }
-                });
-                actionCell.appendChild(deleteBtn);
-            });
-
-            const headerRow = table.querySelector('thead tr');
-            if (headerRow) {
-                const th = document.createElement('th');
-                th.textContent = 'Ação';
-                th.style.width = '60px';
-                headerRow.insertBefore(th, headerRow.firstChild);
-            }
-        });
-    }
-
-    if (cancelEditBtn) {
-        cancelEditBtn.addEventListener('click', function() {
-            window.location.reload();
-        });
-    }
-
-    if (deleteForm) {
-        deleteForm.addEventListener('submit', function(event) {
-            objectsToDeleteInput.value = Array.from(rowsToDelete).join(',');
-        });
-    }
-});
-</script>
-{% endblock %}
+<script src="
