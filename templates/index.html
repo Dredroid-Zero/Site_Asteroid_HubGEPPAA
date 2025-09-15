@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Busca{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1 class="display-5">Nova Busca</h1>
+    <p class="lead">Para alterar a visualização das colunas, acesse a página de <a href="/configuracoes">Configurações</a>.</p>
+</div>
+
+<form id="search-form" method="POST" action="/run-search">
+    <div class="config-box mb-4">
+        <h3>Identificadores (um por linha)</h3>
+        <textarea class="form-control" name="identificadores" rows="5" placeholder="Ex:&#10;P21weOj&#10;P11JuVG&#10;29149">{{ session.get('previous_input', '') }}</textarea>
+    </div>
+    
+    <div class="text-center">
+        <button type="submit" class="btn btn-primary btn-lg">Buscar Dados</button>
+    </div>
+</form>
+
+{% if search_results %}
+<hr class="my-5">
+<div class="text-center">
+    <h2>Resultados da Busca</h2>
+</div>
+
+<div class="config-box mt-4 p-3">
+    <div id="initial-add-controls" class="d-flex justify-content-center align-items-center gap-2">
+        <form id="add-all-form" action="/add-rows-batch" method="POST">
+             <select class="form-select w-auto d-inline-block" name="tabela_destino">
+                {% for name in saved_tables_names %}
+                <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="objects_to_add" value="{{ search_results|map(attribute='Objeto')|join(',') }}">
+            <button type="submit" class="btn btn-primary">Adicionar Todos os {{ search_results|length }} Resultados</button>
+        </form>
+        <button id="enable-add-mode" class="btn btn-info">Adicionar Linha por Linha</button>
+    </div>
+    
+    <div id="add-controls" class="hidden">
+        <form id="add-form" action="/add-rows-batch" method="POST" class="d-flex justify-content-center align-items-center">
+            <label for="tabela_destino_selector" class="form-label me-2 mb-0">Salvar na tabela:</label>
+            <select class="form-select w-auto me-3" name="tabela_destino" id="tabela_destino_selector">
+                {% for name in saved_tables_names %}
+                <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="objects_to_add" id="objects_to_add_input">
+            <button type="submit" class="btn btn-success me-2">Salvar Adições</button>
+            <button type="button" id="cancel-add-mode" class="btn btn-secondary">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+{% if notification %}
+    <div class="alert alert-success mt-3 text-center" role="alert">
+        {{ notification|safe }}
+    </div>
+{% endif %}
+
+
+<div class="table-container config-box mt-4">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th class="action-col hidden" style="width: 60px;">Ação</th>
+                {% for col in visible_cols %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in search_results %}
+            <tr data-object-name="{{ row['Objeto'] }}">
+                <td class="action-col hidden">
+                    <button class="btn btn-success btn-sm add-btn">+</button>
+                </td>
+                {% for col in visible_cols %}
+                    <td>{{ row.get(col, '-') }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('search-form');
+    const addAllForm = document.getElementById('add-all-form');
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    if (searchForm) {
+        searchForm.addEventListener('submit', function() {
+            loadingOverlay.style.display = 'flex';
+        });
+    }
+    if (addAllForm) {
+        addAllForm.addEventListener('submit', function() {
+            loadingOverlay.style.display = 'flex';
+        });
+    }
+
+    const enableAddModeBtn = document.getElementById('enable-add-mode');
+    const initialControls = document.getElementById('initial-add-controls');
+    const addControlsDiv = document.getElementById('add-controls');
+    const cancelAddBtn = document.getElementById('cancel-add-mode');
+    const addForm = document.getElementById('add-form');
+    const objectsToAddInput = document.getElementById('objects_to_add_input');
+    const actionCols = document.querySelectorAll('.action-col');
+    const addButtons = document.querySelectorAll('.add-btn');
+
+    let objectsToAdd = new Set();
+
+    if (enableAddModeBtn) {
+        enableAddModeBtn.addEventListener('click', function() {
+            initialControls.classList.add('hidden');
+            addControlsDiv.classList.remove('hidden');
+            actionCols.forEach(col => col.classList.remove('hidden'));
+        });
+    }
+    
+    if (cancelAddBtn) {
+        cancelAddBtn.addEventListener('click', function() {
+            window.location.reload();
+        });
+    }
+
+    addButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const objectName = row.dataset.objectName;
+
+            if (objectsToAdd.has(objectName)) {
+                objectsToAdd.delete(objectName);
+                this.textContent = '+';
+                this.classList.remove('btn-secondary');
+                this.classList.add('btn-success');
+                row.style.backgroundColor = '';
+            } else {
+                objectsToAdd.add(objectName);
+                this.textContent = '✔';
+                this.classList.remove('btn-success');
+                this.classList.add('btn-secondary');
+                row.style.backgroundColor = '#d1ecf1';
+            }
+        });
+    });
+
+    if (addForm) {
+        addForm.addEventListener('submit', function() {
+            objectsToAddInput.value = Array.from(objectsToAdd).join(',');
+            loadingOverlay.style.display = 'flex';
+        });
+    }
+});
+</script>
+{% endblock %}
