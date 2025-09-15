@@ -66,7 +66,9 @@
         <h5>Editar Conteúdo da Tabela</h5>
         <div id="edit-mode-controls">
             <button id="enter-delete-mode" class="btn btn-outline-danger">Excluir Linhas</button>
-            <button id="enter-reorder-mode" class="btn btn-outline-primary">Reordenar Linhas</button> <div id="edit-buttons" class="mt-2" style="display: none;">
+            <button id="enter-reorder-mode" class="btn btn-outline-primary">Reordenar Linhas</button>
+            
+            <div id="edit-buttons" class="mt-2" style="display: none;">
                 <form id="delete-form" action="/delete-rows" method="POST" style="display: none;">
                     <input type="hidden" name="objects_to_delete" id="objects_to_delete">
                     <button type="submit" class="btn btn-success">Salvar Exclusões</button>
@@ -116,4 +118,119 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableWrapper = document.getElementById('main-table-wrapper');
+    const table = tableWrapper ? tableWrapper.querySelector('table') : null;
+    if (!table) return;
+
+    // --- Controles Gerais ---
+    const enterDeleteBtn = document.getElementById('enter-delete-mode');
+    const enterReorderBtn = document.getElementById('enter-reorder-mode');
+    const cancelEditBtn = document.getElementById('cancel-edit-mode');
+    const editButtonsDiv = document.getElementById('edit-buttons');
+    
+    const deleteForm = document.getElementById('delete-form');
+    const reorderForm = document.getElementById('reorder-form');
+    
+    let sortableInstance = null;
+    let rowsToDelete = new Set();
+
+    function enterEditMode() {
+        enterDeleteBtn.style.display = 'none';
+        enterReorderBtn.style.display = 'none';
+        editButtonsDiv.style.display = 'block';
+    }
+    
+    // --- Lógica para entrar no modo de EXCLUSÃO ---
+    enterDeleteBtn.addEventListener('click', function() {
+        enterEditMode();
+        deleteForm.style.display = 'inline-block';
+        
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const objectName = row.cells[0].textContent;
+            const actionCell = row.insertCell(0);
+            actionCell.style.width = '60px';
+            actionCell.style.textAlign = 'center';
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'X';
+            deleteBtn.className = 'btn btn-danger btn-sm';
+            deleteBtn.onclick = () => {
+                if (rowsToDelete.has(objectName)) {
+                    rowsToDelete.delete(objectName);
+                    row.style.textDecoration = '';
+                } else {
+                    rowsToDelete.add(objectName);
+                    row.style.textDecoration = 'line-through';
+                }
+            };
+            actionCell.appendChild(deleteBtn);
+        });
+        const headerRow = table.querySelector('thead tr');
+        if (headerRow) {
+            const th = document.createElement('th');
+            th.textContent = 'Ação';
+            headerRow.insertBefore(th, headerRow.firstChild);
+        }
+    });
+
+    // --- Lógica para entrar no modo de REORDENAÇÃO ---
+    enterReorderBtn.addEventListener('click', function() {
+        enterEditMode();
+        reorderForm.style.display = 'inline-block';
+
+        const tbody = table.querySelector('tbody');
+        sortableInstance = new Sortable(tbody, {
+            animation: 150,
+            handle: '.handle', 
+        });
+        
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const actionCell = row.insertCell(0);
+            actionCell.style.width = '60px';
+            actionCell.style.textAlign = 'center';
+            actionCell.innerHTML = '<span class="handle" style="cursor: move;">☰</span>';
+        });
+        const headerRow = table.querySelector('thead tr');
+        if (headerRow) {
+            const th = document.createElement('th');
+            th.textContent = 'Mover';
+            headerRow.insertBefore(th, headerRow.firstChild);
+        }
+    });
+
+    // --- Funções Comuns ---
+    cancelEditBtn.addEventListener('click', () => window.location.reload());
+
+    deleteForm.addEventListener('submit', () => {
+        document.getElementById('objects_to_delete').value = Array.from(rowsToDelete).join(',');
+    });
+
+    reorderForm.addEventListener('submit', () => {
+        const orderedObjects = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+            // A célula do nome do objeto é a segunda (índice 1) porque a de Mover foi inserida na primeira (índice 0)
+            return row.cells[1].textContent;
+        });
+        document.getElementById('ordered_objects').value = orderedObjects.join(',');
+    });
+});
+</script>
+{% endblock %} ```
+
+### O que Fazer
+
+Agora, basta atualizar o site que está no ar com esta correção.
+
+1.  **Pare o servidor** local (`Ctrl+C`), se ele estiver rodando.
+2.  Substitua o conteúdo do seu arquivo `templates/minha_tabela.html` local.
+3.  **Salve** o arquivo.
+4.  Use o **CMD** para enviar a atualização para o GitHub, com os 3 comandos:
+
+    ```cmd
+    cd Desktop\Site_Asteroides
+    git add .
+    git commit -m "Corrige erro de template em minhas_tabelas.html"
+    git push origin main
+    ```
+Depois de alguns minutos, o Render vai atualizar o site e o erro "Internal Server Error" desaparecerá.
