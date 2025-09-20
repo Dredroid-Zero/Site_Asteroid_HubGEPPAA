@@ -1,5 +1,3 @@
-# services.py (VERSÃO COM PADRÃO CORRIGIDO)
-
 import pandas as pd
 import requests
 from requests.exceptions import RequestException
@@ -10,25 +8,26 @@ import aiohttp
 # --- Constantes ---
 ALL_COLUMNS = [
     'Objeto', 'Status do objeto', 'Designação IAU', 'String da Observação', '(*?)',
-    'Linhas de Observação WAMO', 'Status de Consulta', 'Tipo de Órb-ita',
+    'Linhas de Observação WAMO', 'Status de Consulta', 'Tipo de Órbita',
     'Magnitude Absoluta', 'Incerteza', 'Referência', 'Observações Utilizadas',
     'Oposições', 'Comprimento do Arco (dias)', 'Primeira Oposição Usada',
     'Última Oposição Usada', 'Primeira Data de Obs. Usada',
     'Última Data de Obs. Usada', 'Descrição'
 ]
-# PADRÃO DE COLUNAS CORRIGIDO AQUI
-DEFAULT_COLUMNS = {
-    'Objeto', 
-    'Status do objeto', 
-    '(*?)', 
-    'Designação IAU', 
-    'Tipo de Órbita', 
-    'Incerteza', 
+
+# PADRÃO DE COLUNAS (lista para ordem estável)
+DEFAULT_COLUMNS = [
+    'Objeto',
+    'Status do objeto',
+    '(*?)',
+    'Designação IAU',
+    'Tipo de Órbita',
+    'Incerteza',
     'Descrição'
-}
+]
 
 
-# --- Funções de Lógica (sem alterações) ---
+# --- Funções de Lógica ---
 def extract_orbital_data_from_html(html_content: str):
     soup = BeautifulSoup(html_content, 'html.parser')
     data = {}
@@ -39,22 +38,29 @@ def extract_orbital_data_from_html(html_content: str):
         data['Tipo de Órbita'] = orbit_type_p.split(':')[-1].strip() if orbit_type_p else None
     except Exception:
         pass
-    
+
     orbit_tables = soup.find_all('table', class_='nb')
+    mapa_labels = {
+        'absolute magnitude': 'Magnitude Absoluta',
+        'uncertainty': 'Incerteza',
+        'reference': 'Referência',
+        'observations used': 'Observações Utilizadas',
+        'oppositions': 'Oposições',
+        'arc length (days)': 'Comprimento do Arco (dias)',
+        'first opposition used': 'Primeira Oposição Usada',
+        'last opposition used': 'Última Oposição Usada',
+        'first observation date used': 'Primeira Data de Obs. Usada',
+        'last observation date used': 'Última Data de Obs. Usada'
+    }
+
     for table in orbit_tables:
         rows = table.find_all('tr')
         for row in rows:
             cells = row.find_all('td')
             if len(cells) >= 2:
                 label = cells[0].get_text(strip=True).replace('(°)', '').replace('(AU)', '')
+                label = label.strip().lower()
                 value = cells[1].get_text(strip=True)
-                mapa_labels = {
-                    'absolute magnitude': 'Magnitude Absoluta', 'uncertainty': 'Incerteza', 
-                    'reference': 'Referência', 'observations used': 'Observações Utilizadas', 
-                    'oppositions': 'Oposições', 'arc length (days)': 'Comprimento do Arco (dias)', 
-                    'first opposition used': 'Primeira Oposição Usada', 'last opposition used': 'Última Oposição Usada', 
-                    'first observation date used': 'Primeira Data de Obs. Usada', 'last observation date used': 'Última Data de Obs. Usada'
-                }
                 if label in mapa_labels:
                     data[mapa_labels[label]] = value
     return data
@@ -82,18 +88,18 @@ async def fetch_one(session, url, retries=3, initial_delay=1):
             print(f"Timeout na tentativa {attempt + 1} para {url}")
         except aiohttp.ClientError as e:
             print(f"Erro de cliente na tentativa {attempt + 1} para {url}: {e}")
-        
+
         if attempt < retries - 1:
             await asyncio.sleep(delay)
             delay *= 2
-            
+
     return None
 
 async def fetch_all_orbital_data_async(iau_desigs):
     base_url = "https://minorplanetcenter.net/db_search/show_object?object_id="
     results = {}
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
-    
+
     async with aiohttp.ClientSession(headers=headers) as session:
         tasks = []
         valid_desigs = []
@@ -102,9 +108,9 @@ async def fetch_all_orbital_data_async(iau_desigs):
                 clean_desig = desig.strip().replace(" ", "+").replace("(", "%28").replace(")", "%29")
                 tasks.append(fetch_one(session, f"{base_url}{clean_desig}"))
                 valid_desigs.append(desig)
-        
+
         html_contents = await asyncio.gather(*tasks)
-        
+
         for desig, html in zip(valid_desigs, html_contents):
             if html:
                 results[desig] = html
@@ -158,13 +164,23 @@ def run_full_search_logic(prelim_list):
                     'Status de Consulta': status_consulta
                 }
                 all_combined_data.append(wamo_info)
-    
+
     if not all_combined_data:
         return None
 
     iau_desigs_to_fetch = [item['Designação IAU'] for item in all_combined_data]
+    orbital_data_htmls = {}
     try:
         orbital_data_htmls = asyncio.run(fetch_all_orbital_data_async(iau_desigs_to_fetch))
+    except RuntimeError:
+        # Ambiente com loop já em execução (ex: alguns servidores ASGI). Faz fallback para novo loop.
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            orbital_data_htmls = loop.run_until_complete(fetch_all_orbital_data_async(iau_desigs_to_fetch))
+        except Exception as e:
+            print(f"Erro no fallback assíncrono: {e}")
+            orbital_data_htmls = {}
     except Exception as e:
         print(f"Um erro crítico ocorreu durante a busca assíncrona: {e}")
         orbital_data_htmls = {}
@@ -175,7 +191,7 @@ def run_full_search_logic(prelim_list):
         if html_content:
             orbital_info = extract_orbital_data_from_html(html_content)
             item.update(orbital_info)
-    
+
     df = pd.DataFrame(all_combined_data)
     if df.empty:
         return None

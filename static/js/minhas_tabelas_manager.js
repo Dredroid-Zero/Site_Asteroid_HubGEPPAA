@@ -1,10 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    if (Sortable && Sortable.MultiDrag) {
-        Sortable.mount(new Sortable.MultiDrag());
-    } else {
-        console.error("SortableJS MultiDrag plugin não foi encontrado.");
-    }
-
     const tableBody = document.getElementById('table-body-sortable');
     const managementPanel = document.querySelector('.main-card');
     const contentCard = document.querySelector('.results-card');
@@ -32,40 +26,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if(cancelReorderBtn) cancelReorderBtn.addEventListener('click', () => { exitAllModes(true); });
     if(saveReorderBtn) saveReorderBtn.addEventListener('click', saveOrder);
 
-    // --- LÓGICA DE CLIQUE NA TABELA ---
+    // --- LÓGICA DE CLIQUE NA TABELA (SIMPLIFICADA) ---
     if(tableBody) tableBody.addEventListener('click', (e) => {
-        const row = e.target.closest('tr');
-        if (!row) return;
-
-        // Se o clique foi no ícone de arrastar, não fazemos nada com a seleção.
-        // Apenas garantimos que a linha clicada seja a selecionada se nenhuma outra estiver.
-        if (e.target.closest('.drag-handle')) {
-            if (!row.classList.contains('selected')) {
-                tableBody.querySelectorAll('tr.selected').forEach(selectedRow => {
-                    selectedRow.classList.remove('selected');
-                });
-                row.classList.add('selected');
-            }
-            return;
-        }
-
         if (tableBody.classList.contains('delete-mode')) {
+            const row = e.target.closest('tr');
+            if (!row) return;
             const checkbox = row.querySelector('.row-checkbox');
             if (e.target.tagName !== 'INPUT') checkbox.checked = !checkbox.checked;
             row.classList.toggle('selected', checkbox.checked);
             const selectedCount = tableBody.querySelectorAll('.row-checkbox:checked').length;
             if(confirmDeleteBtn) confirmDeleteBtn.disabled = (selectedCount === 0);
-        }
-        else if (tableBody.classList.contains('reorder-mode')) {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                row.classList.toggle('selected');
-            } else {
-                tableBody.querySelectorAll('tr.selected').forEach(selectedRow => {
-                    selectedRow.classList.remove('selected');
-                });
-                row.classList.add('selected');
-            }
         }
     });
 
@@ -96,8 +66,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 ghostClass: 'sortable-ghost', 
                 dragClass: 'sortable-drag',
                 dataIdAttr: 'data-object-name',
-                multiDrag: true,
-                selectedClass: 'selected',
                 scroll: true, 
                 forceFallback: true,
                 scrollable: scrollableContainer,
@@ -128,5 +96,36 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/reorder-rows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_order: newOrder }) });
             if (response.ok) { exitAllModes(true); } else { alert('Erro ao salvar a nova ordem.'); }
         } catch (error) { console.error('Fetch error:', error); alert('Erro de conexão ao salvar a nova ordem.'); }
+    }
+
+    // --- LÓGICA DA ANIMAÇÃO DE REANÁLISE ---
+    const reanalyzeForm = document.getElementById('reanalyze-form');
+    if (reanalyzeForm) {
+        reanalyzeForm.addEventListener('submit', function() {
+            // Pega os elementos da tela de carregamento
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('progress-bar-inner');
+            const asteroidIcon = document.getElementById('asteroid-icon');
+            const progressTitle = document.getElementById('progress-title');
+            const chunksText = document.getElementById('progress-chunks-text');
+
+            if (loadingOverlay) {
+                // Mostra a tela de carregamento
+                loadingOverlay.style.display = 'flex';
+                if(progressTitle) progressTitle.textContent = 'Reanalisando dados...';
+                if(chunksText) chunksText.textContent = 'Isso pode levar alguns instantes.';
+
+                // Animação de progresso simples
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 2;
+                    if (progressBar) progressBar.style.width = progress + '%';
+                    if (asteroidIcon) asteroidIcon.style.left = `calc(${progress}% - 15px)`;
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                    }
+                }, 80); // Um pouco mais rápido que a busca normal
+            }
+        });
     }
 });

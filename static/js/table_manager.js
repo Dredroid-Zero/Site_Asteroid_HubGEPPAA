@@ -1,163 +1,131 @@
-// static/js/table_manager.js
-
 document.addEventListener('DOMContentLoaded', function() {
-    const tableWrapper = document.getElementById('main-table-wrapper');
-    const table = tableWrapper ? tableWrapper.querySelector('table') : null;
-    
-    // Se não houver tabela na página, não executa o resto do código.
-    if (!table) return;
+    const tableBody = document.getElementById('table-body-sortable');
+    const managementPanel = document.querySelector('.main-card');
+    const contentCard = document.querySelector('.results-card');
+    const scrollableContainer = document.querySelector('.table-responsive');
+    let sortable = null;
 
-    // --- Controles e Modos de Edição ---
-    const enterDeleteBtn = document.getElementById('enter-delete-mode');
-    const enterReorderBtn = document.getElementById('enter-reorder-mode');
-    const cancelEditBtn = document.getElementById('cancel-edit-mode');
-    const editButtonsDiv = document.getElementById('edit-buttons');
-    const deleteForm = document.getElementById('delete-form');
-    const reorderForm = document.getElementById('reorder-form');
-    
-    let sortableInstance = null;
-    let rowsToDelete = new Set();
+    // --- MODO DE EXCLUSÃO ---
+    const enableDeleteBtn = document.getElementById('enable-delete-mode');
+    const deleteControls = document.getElementById('delete-controls');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-mode');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const deleteForm = document.getElementById('delete-rows-form');
+    const deleteInput = document.getElementById('rows_to_delete_input');
 
-    function enterEditMode() {
-        enterDeleteBtn.style.display = 'none';
-        enterReorderBtn.style.display = 'none';
-        editButtonsDiv.style.display = 'block';
+    if(enableDeleteBtn) enableDeleteBtn.addEventListener('click', () => { enterMode('delete'); });
+    if(cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', () => { exitAllModes(); });
+    
+    // --- MODO DE REORDENAÇÃO ---
+    const enableReorderBtn = document.getElementById('reorder-rows-btn');
+    const reorderControls = document.getElementById('reorder-controls');
+    const saveReorderBtn = document.getElementById('save-reorder-btn');
+    const cancelReorderBtn = document.getElementById('cancel-reorder-btn');
+
+    if(enableReorderBtn) enableReorderBtn.addEventListener('click', () => { enterMode('reorder'); });
+    if(cancelReorderBtn) cancelReorderBtn.addEventListener('click', () => { exitAllModes(true); });
+    if(saveReorderBtn) saveReorderBtn.addEventListener('click', saveOrder);
+
+    // --- LÓGICA DE CLIQUE NA TABELA (SIMPLIFICADA) ---
+    if(tableBody) tableBody.addEventListener('click', (e) => {
+        if (tableBody.classList.contains('delete-mode')) {
+            const row = e.target.closest('tr');
+            if (!row) return;
+            const checkbox = row.querySelector('.row-checkbox');
+            if (e.target.tagName !== 'INPUT') checkbox.checked = !checkbox.checked;
+            row.classList.toggle('selected', checkbox.checked);
+            const selectedCount = tableBody.querySelectorAll('.row-checkbox:checked').length;
+            if(confirmDeleteBtn) confirmDeleteBtn.disabled = (selectedCount === 0);
+        }
+    });
+
+    if(deleteForm) deleteForm.addEventListener('submit', function(e) {
+        const selectedCheckboxes = tableBody.querySelectorAll('.row-checkbox:checked');
+        const objectNames = Array.from(selectedCheckboxes).map(cb => cb.closest('tr').dataset.objectName);
+        if (objectNames.length === 0 || !confirm(`Tem certeza que deseja excluir ${objectNames.length} linha(s)?`)) {
+            e.preventDefault();
+            return;
+        }
+        deleteInput.value = objectNames.join(',');
+    });
+
+    function enterMode(mode) {
+        exitAllModes();
+        if(managementPanel) managementPanel.classList.add('d-none');
+        if(contentCard.querySelector('.results-header')) contentCard.querySelector('.results-header').classList.add('d-none');
+
+        if (mode === 'delete') {
+            tableBody.classList.add('delete-mode');
+            if(deleteControls) deleteControls.classList.remove('d-none');
+        } else if (mode === 'reorder') {
+            tableBody.classList.add('reorder-mode');
+            if(reorderControls) reorderControls.classList.remove('d-none');
+            sortable = new Sortable(tableBody, { 
+                handle: '.drag-handle',
+                animation: 150, 
+                ghostClass: 'sortable-ghost', 
+                dragClass: 'sortable-drag',
+                dataIdAttr: 'data-object-name',
+                scroll: true, 
+                forceFallback: true,
+                scrollable: scrollableContainer,
+                scrollSensitivity: 70,
+                scrollSpeed: 15
+            });
+        }
     }
 
-    // --- Modo de Exclusão ---
-    if (enterDeleteBtn) {
-        enterDeleteBtn.addEventListener('click', function() {
-            enterEditMode();
-            deleteForm.style.display = 'inline-block';
-            
-            // Adiciona uma célula de ação em cada linha para o botão de deletar
-            table.querySelectorAll('tbody tr').forEach(row => {
-                // Usamos o primeiro campo da linha como identificador do objeto.
-                const objectName = row.cells[0].textContent.trim();
-                const actionCell = row.insertCell(0); // Insere a célula no início da linha
-                actionCell.classList.add('action-cell-delete');
-                
-                const deleteBtn = document.createElement('button');
-                deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-                deleteBtn.className = 'btn btn-danger btn-sm rounded-pill';
-                deleteBtn.title = 'Marcar para exclusão';
-                
-                deleteBtn.onclick = () => {
-                    if (rowsToDelete.has(objectName)) {
-                        rowsToDelete.delete(objectName);
-                        row.classList.remove('row-marked-for-deletion');
-                        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-                        deleteBtn.classList.replace('btn-outline-warning', 'btn-danger');
-                        deleteBtn.title = 'Marcar para exclusão';
-                    } else {
-                        rowsToDelete.add(objectName);
-                        row.classList.add('row-marked-for-deletion');
-                        deleteBtn.innerHTML = '<i class="fas fa-undo"></i>';
-                        deleteBtn.classList.replace('btn-danger', 'btn-outline-warning');
-                        deleteBtn.title = 'Cancelar exclusão';
+    function exitAllModes(reload = false) {
+        if(managementPanel) managementPanel.classList.remove('d-none');
+        if(contentCard.querySelector('.results-header')) contentCard.querySelector('.results-header').classList.remove('d-none');
+        tableBody.classList.remove('delete-mode', 'reorder-mode');
+        if(deleteControls) deleteControls.classList.add('d-none');
+        if(reorderControls) reorderControls.classList.add('d-none');
+        tableBody.querySelectorAll('.row-checkbox:checked').forEach(cb => cb.checked = false);
+        tableBody.querySelectorAll('tr.selected').forEach(row => row.classList.remove('selected'));
+        if(confirmDeleteBtn) confirmDeleteBtn.disabled = true;
+        if (sortable) sortable.destroy();
+        sortable = null;
+        if (reload) window.location.reload();
+    }
+
+    async function saveOrder() {
+        if (!sortable) return;
+        const newOrder = sortable.toArray();
+        try {
+            const response = await fetch('/reorder-rows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_order: newOrder }) });
+            if (response.ok) { exitAllModes(true); } else { alert('Erro ao salvar a nova ordem.'); }
+        } catch (error) { console.error('Fetch error:', error); alert('Erro de conexão ao salvar a nova ordem.'); }
+    }
+
+    // --- LÓGICA DA ANIMAÇÃO DE REANÁLISE ---
+    const reanalyzeForm = document.getElementById('reanalyze-form');
+    if (reanalyzeForm) {
+        reanalyzeForm.addEventListener('submit', function() {
+            // Pega os elementos da tela de carregamento
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('progress-bar-inner');
+            const asteroidIcon = document.getElementById('asteroid-icon');
+            const progressTitle = document.getElementById('progress-title');
+            const chunksText = document.getElementById('progress-chunks-text');
+
+            if (loadingOverlay) {
+                // Mostra a tela de carregamento
+                loadingOverlay.style.display = 'flex';
+                if(progressTitle) progressTitle.textContent = 'Reanalisando dados...';
+                if(chunksText) chunksText.textContent = 'Isso pode levar alguns instantes.';
+
+                // Animação de progresso simples
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 2;
+                    if (progressBar) progressBar.style.width = progress + '%';
+                    if (asteroidIcon) asteroidIcon.style.left = `calc(${progress}% - 15px)`;
+                    if (progress >= 100) {
+                        clearInterval(interval);
                     }
-                };
-                actionCell.appendChild(deleteBtn);
-            });
-            
-            // Adiciona o cabeçalho para a nova coluna
-            const headerRow = table.querySelector('thead tr');
-            if (headerRow) {
-                const th = document.createElement('th');
-                th.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir';
-                th.classList.add('action-header-delete');
-                headerRow.insertBefore(th, headerRow.firstChild);
+                }, 80); // Um pouco mais rápido que a busca normal
             }
-        });
-    }
-
-    // --- Modo de Reordenação ---
-    if (enterReorderBtn) {
-        enterReorderBtn.addEventListener('click', function() {
-            enterEditMode();
-            reorderForm.style.display = 'inline-block';
-
-            const tbody = table.querySelector('tbody');
-            sortableInstance = new Sortable(tbody, {
-                animation: 150,
-                handle: '.reorder-handle',
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-            });
-            
-            // Adiciona a alça de reordenação em cada linha
-            table.querySelectorAll('tbody tr').forEach(row => {
-                const actionCell = row.insertCell(0);
-                actionCell.classList.add('action-cell-reorder');
-                actionCell.innerHTML = '<span class="reorder-handle"><i class="fas fa-grip-vertical"></i></span>';
-            });
-            
-            // Adiciona o cabeçalho para a nova coluna
-            const headerRow = table.querySelector('thead tr');
-            if (headerRow) {
-                const th = document.createElement('th');
-                th.innerHTML = '<i class="fas fa-arrows-alt"></i> Mover';
-                th.classList.add('action-header-reorder');
-                headerRow.insertBefore(th, headerRow.firstChild);
-            }
-        });
-    }
-
-    // --- Cancelar Modo de Edição ---
-    if (cancelEditBtn) {
-        cancelEditBtn.addEventListener('click', () => {
-            // Simplesmente recarrega a página para reverter todas as mudanças visuais.
-            // É a forma mais simples e robusta de garantir o estado original.
-            window.location.reload();
-        });
-    }
-
-    // --- Submissão dos Formulários de Edição ---
-    if (deleteForm) {
-        deleteForm.addEventListener('submit', () => {
-            document.getElementById('objects_to_delete').value = Array.from(rowsToDelete).join(',');
-        });
-    }
-
-    if (reorderForm) {
-        reorderForm.addEventListener('submit', () => {
-            const orderedObjects = Array.from(table.querySelectorAll('tbody tr')).map(row => {
-                // Assume que o nome do objeto está na segunda célula após a célula de ação
-                return row.cells[1].textContent.trim();
-            });
-            document.getElementById('ordered_objects').value = orderedObjects.join(',');
         });
     }
 });
-
-// --- Função Global para Exportar a Tabela para CSV ---
-function exportTable() {
-    const activeTableName = document.querySelector('h3 > .active-table-name')?.textContent || 'tabela';
-    const table = document.querySelector('#main-table-wrapper table');
-    if (!table) return;
-    
-    let csv = [];
-    const rows = table.querySelectorAll('tr');
-    
-    for (const row of rows) {
-        const rowData = [];
-        const cols = row.querySelectorAll('th, td');
-        for (const col of cols) {
-            // Limpa o texto para remover espaços extras e quebras de linha
-            let data = col.innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s\s+/g, ' ').trim();
-            // Escapa aspas duplas
-            data = data.replace(/"/g, '""');
-            rowData.push(`"${data}"`);
-        }
-        csv.push(rowData.join(','));
-    }
-    
-    const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${activeTableName.trim()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}

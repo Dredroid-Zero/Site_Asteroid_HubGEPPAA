@@ -1,5 +1,7 @@
 Flask
+Flask-Session
 pandas
 requests
 beautifulsoup4
+aiohttp
 gunicorn

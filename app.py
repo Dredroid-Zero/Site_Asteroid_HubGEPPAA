@@ -46,14 +46,27 @@ def minhas_tabelas():
     active_table_name = request.args.get('active_table', session.get('active_table'))
     session['active_table'] = active_table_name
     table_data = session['saved_tables'].get(active_table_name, [])
+    
+    # Pega as informações de mudança da sessão e depois as remove
+    changes = session.pop('last_reanalyze_changes', None)
+
     visible_cols = []
     if table_data:
         all_columns_in_data = table_data[0].keys()
         visible_cols = [col for col in session['column_order'] if col in all_columns_in_data and col in session['visible_columns']]
         if not visible_cols and 'Objeto' in all_columns_in_data:
             visible_cols = ['Objeto']
-    return render_template('minha_tabela.html', active_table_name=active_table_name, saved_tables_names=list(session['saved_tables'].keys()), table_data=table_data, table_headers=visible_cols)
 
+    return render_template(
+        'minha_tabela.html', 
+        active_table_name=active_table_name, 
+        saved_tables_names=list(session['saved_tables'].keys()), 
+        table_data=table_data, 
+        table_headers=visible_cols,
+        changes=changes  # Envia as mudanças para o template
+    )
+
+# ... (outras rotas como /configuracoes, /add-rows-batch, etc. permanecem as mesmas) ...
 @app.route("/configuracoes", methods=["GET", "POST"])
 def configuracoes():
     if request.method == "POST":
@@ -86,14 +99,14 @@ def reorder_rows():
     reordered_list = [row_map[obj_name] for obj_name in new_order if obj_name in row_map]; reordered_set = set(new_order)
     for row in table_list:
         if str(row['Objeto']) not in reordered_set: reordered_list.append(row)
-    saved_tables = session['saved_tables']; saved_tables[active_table_name] = reordered_list; session.modified = True
+    session['saved_tables'][active_table_name] = reordered_list; session.modified = True
     return jsonify({'success': True, 'message': 'Ordem salva com sucesso!'})
 
 @app.route("/create-table", methods=["POST"])
 def create_table():
     new_name = request.form.get('new_name', '').strip()
     if new_name and new_name not in session['saved_tables']:
-        saved_tables = session['saved_tables']; saved_tables[new_name] = []; session['saved_tables'] = saved_tables; session.modified = True; session['active_table'] = new_name
+        session['saved_tables'][new_name] = []; session.modified = True; session['active_table'] = new_name
         flash(f"Tabela '{new_name}' criada com sucesso!", "success")
     elif new_name in session['saved_tables']: flash(f"Erro: A tabela '{new_name}' já existe.", "danger")
     return redirect(url_for('minhas_tabelas'))
@@ -102,7 +115,7 @@ def create_table():
 def rename_table():
     old_name = session.get('active_table'); new_name = request.form.get('new_name', '').strip()
     if old_name and new_name and new_name not in session['saved_tables']:
-        saved_tables = session['saved_tables']; saved_tables[new_name] = saved_tables.pop(old_name, []); session['saved_tables'] = saved_tables; session.modified = True; session['active_table'] = new_name
+        session['saved_tables'][new_name] = session['saved_tables'].pop(old_name, []); session.modified = True; session['active_table'] = new_name
         flash(f"Tabela '{old_name}' renomeada para '{new_name}'.", "success")
     elif new_name in session['saved_tables']: flash(f"Erro: O nome '{new_name}' já está em uso.", "danger")
     return redirect(url_for('minhas_tabelas', active_table=new_name))
@@ -112,7 +125,7 @@ def delete_table():
     table_to_delete = session.get('active_table')
     if table_to_delete and table_to_delete in session['saved_tables']:
         if len(session['saved_tables']) <= 1: flash("Não é possível excluir a última tabela.", "warning"); return redirect(url_for('minhas_tabelas'))
-        saved_tables = session['saved_tables']; saved_tables.pop(table_to_delete); session['saved_tables'] = saved_tables; session.modified = True; session['active_table'] = list(session['saved_tables'].keys())[0]
+        session['saved_tables'].pop(table_to_delete); session.modified = True; session['active_table'] = list(session['saved_tables'].keys())[0]
         flash(f"Tabela '{table_to_delete}' excluída com sucesso.", "success")
     return redirect(url_for('minhas_tabelas'))
 
@@ -122,22 +135,61 @@ def delete_rows():
     rows_to_delete_str = request.form.get('rows_to_delete', ''); rows_to_delete = {name.strip() for name in rows_to_delete_str.split(',') if name.strip()}
     if rows_to_delete and table_list:
         original_count = len(table_list); updated_table_list = [row for row in table_list if row['Objeto'] not in rows_to_delete]
-        saved_tables = session['saved_tables']; saved_tables[active_table_name] = updated_table_list; session['saved_tables'] = saved_tables; session.modified = True
+        session['saved_tables'][active_table_name] = updated_table_list; session.modified = True
         deleted_count = original_count - len(updated_table_list)
         flash(f'{deleted_count} linha(s) foram excluídas da tabela "{active_table_name}".', 'success')
     return redirect(url_for('minhas_tabelas'))
 
 @app.route("/reanalisar", methods=["POST"])
 def reanalyze():
-    active_table_name = session.get('active_table'); table_list = session['saved_tables'].get(active_table_name, [])
-    if not table_list: flash("Tabela vazia, nada para reanalisar.", "info"); return redirect(url_for('minhas_tabelas'))
-    old_df = pd.DataFrame(table_list); objetos_para_reanalise = old_df['Objeto'].tolist()
+    active_table_name = session.get('active_table')
+    table_list = session['saved_tables'].get(active_table_name, [])
+    if not table_list:
+        flash("Tabela vazia, nada para reanalisar.", "info")
+        return redirect(url_for('minhas_tabelas'))
+
+    # Criar um mapa dos dados antigos para fácil comparação
+    old_data_map = {row['Objeto']: row for row in table_list}
+    objetos_para_reanalise = list(old_data_map.keys())
+
+    # Buscar novos dados
     new_df = run_full_search_logic(objetos_para_reanalise)
-    if new_df is not None and not new_df.empty:
-        saved_tables = session['saved_tables']; saved_tables[active_table_name] = new_df.to_dict('records'); session['saved_tables'] = saved_tables; session.modified = True
-        flash("Tabela reanalisada com sucesso!", "success")
-    else: flash("Não foi possível obter novos dados na reanálise.", "warning")
+    if new_df is None or new_df.empty:
+        flash("Não foi possível obter novos dados na reanálise.", "warning")
+        return redirect(url_for('minhas_tabelas'))
+    
+    new_table_list = new_df.to_dict('records')
+    
+    # Comparar dados e registrar mudanças
+    updated_cells = {}
+    changed_cell_count = 0
+    for new_row in new_table_list:
+        obj_name = new_row['Objeto']
+        if obj_name in old_data_map:
+            old_row = old_data_map[obj_name]
+            changed_columns = []
+            for key, new_value in new_row.items():
+                old_value = old_row.get(key)
+                if str(new_value) != str(old_value):
+                    changed_columns.append(key)
+                    changed_cell_count += 1
+            if changed_columns:
+                updated_cells[obj_name] = changed_columns
+
+    # Salvar os novos dados e as informações sobre as mudanças na sessão
+    session['saved_tables'][active_table_name] = new_table_list
+    if changed_cell_count > 0:
+        summary = f"Reanálise concluída! {changed_cell_count} célula(s) foram atualizada(s)."
+        session['last_reanalyze_changes'] = {
+            'summary': summary,
+            'updated_cells': updated_cells
+        }
+    else:
+        flash("Reanálise concluída. Nenhum dado foi alterado.", "info")
+    
+    session.modified = True
     return redirect(url_for('minhas_tabelas'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)

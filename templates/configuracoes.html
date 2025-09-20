@@ -9,20 +9,33 @@
 
 <form method="POST">
     <div class="text-center mb-4">
-        <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-save me-2"></i> Salvar Configurações
-        </button>
+        <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Salvar Configurações" data-bs-content="Aplica as mudanças de visibilidade e ordem de colunas a todas as suas tabelas.">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i> Salvar Configurações
+            </button>
+        </span>
     </div>
 
     <div class="row">
         <div class="col-lg-7 mb-4">
             <div class="main-card h-100 mx-0" style="max-width: none;">
-                <h3 class="mb-4">Visibilidade das Colunas</h3>
-                 <div class="d-flex gap-2 mb-4">
-                    <button type="button" id="select-all" class="btn btn-sm btn-outline-success">Selecionar Todas</button>
-                    <button type="button" id="select-none" class="btn btn-sm btn-outline-secondary">Desmarcar Todas</button>
-                    <button type="button" id="select-default" class="btn btn-sm btn-outline-info">Padrão</button>
-                </div>
+                <h3 class="mb-4 d-flex align-items-center gap-2">
+                    Visibilidade das Colunas
+                    <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Seleção de Colunas" data-bs-content="Marque ou desmarque as caixas para escolher quais colunas de dados aparecerão em suas tabelas.">
+                        <i class="fas fa-question-circle text-secondary fs-5"></i>
+                    </span>
+                </h3>
+                 <div class="d-flex flex-wrap gap-2 mb-4">
+                     <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Selecionar Todas" data-bs-content="Marca todas as colunas como visíveis.">
+                        <button type="button" id="select-all" class="btn btn-sm btn-outline-success">Selecionar Todas</button>
+                     </span>
+                     <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Desmarcar Todas" data-bs-content="Desmarca todas as colunas, ocultando-as.">
+                        <button type="button" id="select-none" class="btn btn-sm btn-outline-secondary">Desmarcar Todas</button>
+                     </span>
+                     <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Restaurar Padrão" data-bs-content="Reverte a seleção para o conjunto de colunas padrão recomendado.">
+                        <button type="button" id="select-default" class="btn btn-sm btn-outline-info">Padrão</button>
+                     </span>
+                 </div>
                 <div class="row">
                     {% set half = (ALL_COLUMNS|length / 2)|round|int %}
                     <div class="col-md-6">
@@ -46,7 +59,12 @@
         </div>
         <div class="col-lg-5 mb-4">
             <div class="main-card h-100 mx-0" style="max-width: none;">
-                <h3 class="mb-4">Ordem das Colunas</h3>
+                <h3 class="mb-4 d-flex align-items-center gap-2">
+                    Ordem das Colunas
+                    <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Ordenação de Colunas" data-bs-content="Arraste e solte os nomes das colunas para definir a ordem em que elas aparecerão, da esquerda para a direita, nas suas tabelas.">
+                        <i class="fas fa-question-circle text-secondary fs-5"></i>
+                    </span>
+                </h3>
                 <p class="text-secondary small">Arraste os itens da lista abaixo para reordenar.</p>
                 <ul id="sortable-list" class="list-group">
                     {% for col in column_order %}
@@ -65,5 +83,5 @@
 {% block scripts %}
 <script> const DEFAULT_COLUMNS_FROM_FLASK = {{ DEFAULT_COLUMNS | tojson }}; </script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-<script src="{{ url_for('static', filename='js/config_manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/configuracoes_manager.js') }}"></script>
 {% endblock %}

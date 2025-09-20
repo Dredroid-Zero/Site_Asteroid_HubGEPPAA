@@ -36,3 +36,33 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--back
 .sortable-drag { opacity: 0.7; background: var(--bs-info) !important; color: white !important; }
 .sortable-ghost { background: rgba(255, 255, 255, 0.1); border: 2px dashed var(--bs-info); }
 .sortable-ghost td { background: rgba(255, 255, 255, 0.1); border-top: 2px dashed var(--bs-info); border-bottom: 2px dashed var(--bs-info); }
+/* EFEITO DE PULSAÇÃO PARA BOTÕES IMPORTANTES */
+@keyframes pulsate-shadow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 10px 15px rgba(25, 135, 84, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+  }
+}
+
+.btn-pulsate:hover {
+  animation: pulsate-shadow 1.5s infinite;
+}
+/* Animação e estilo para células da tabela que foram alteradas */
+@keyframes glow-success {
+  from {
+    box-shadow: 0 0 5px rgba(25, 135, 84, 0.7), inset 0 0 5px rgba(25, 135, 84, 0.3);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(25, 135, 84, 0), inset 0 0 10px rgba(25, 135, 84, 0.1);
+  }
+}
+
+.cell-changed {
+  background-color: rgba(25, 135, 84, 0.2) !important;
+  animation: glow-success 2s ease-out;
+}
