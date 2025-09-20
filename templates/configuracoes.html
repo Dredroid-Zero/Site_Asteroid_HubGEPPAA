@@ -1,125 +1,69 @@
 {% extends 'base.html' %}
-{% block title %}Configurações de Exibição{% endblock %}
+{% block title %}Configurações{% endblock %}
 
 {% block content %}
-<div class="text-center mb-4">
-    <h1 class="display-5">Configurações de Exibição</h1>
-    <p class="lead">Marque as colunas que deseja ver e arraste os nomes na lista à direita para definir a ordem.</p>
+<div class="text-center">
+    <h1 class="display-5 fw-bold">Configurações</h1>
+    <p class="text-secondary mb-4">Personalize a exibição das colunas nas tabelas.</p>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }} text-center">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-
 <form method="POST">
-    <div class="config-box mb-4">
-        <div class="row">
-            <div class="col-lg-8">
-                <b>Ocultar/Exibir Colunas:</b>
-                <div class="row mt-2">
+    <div class="text-center mb-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-save me-2"></i> Salvar Configurações
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7 mb-4">
+            <div class="main-card h-100 mx-0" style="max-width: none;">
+                <h3 class="mb-4">Visibilidade das Colunas</h3>
+                 <div class="d-flex gap-2 mb-4">
+                    <button type="button" id="select-all" class="btn btn-sm btn-outline-success">Selecionar Todas</button>
+                    <button type="button" id="select-none" class="btn btn-sm btn-outline-secondary">Desmarcar Todas</button>
+                    <button type="button" id="select-default" class="btn btn-sm btn-outline-info">Padrão</button>
+                </div>
+                <div class="row">
                     {% set half = (ALL_COLUMNS|length / 2)|round|int %}
                     <div class="col-md-6">
                         {% for col in ALL_COLUMNS[:half] %}
-                        <div class="form-check">
-                            <input class="form-check-input column-checkbox" type="checkbox" name="visible_columns" value="{{ col }}" {% if col in visible_columns %}checked{% endif %}>
-                            <label class="form-check-label">{{ col }}</label>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input column-checkbox" type="checkbox" name="visible_columns" value="{{ col }}" id="col_{{ loop.index }}" {% if col in visible_columns %}checked{% endif %}>
+                            <label class="form-check-label ms-2" for="col_{{ loop.index }}">{{ col }}</label>
                         </div>
                         {% endfor %}
                     </div>
                     <div class="col-md-6">
                         {% for col in ALL_COLUMNS[half:] %}
-                        <div class="form-check">
-                            <input class="form-check-input column-checkbox" type="checkbox" name="visible_columns" value="{{ col }}" {% if col in visible_columns %}checked{% endif %}>
-                            <label class="form-check-label">{{ col }}</label>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input column-checkbox" type="checkbox" name="visible_columns" value="{{ col }}" id="col_{{ loop.index + half }}" {% if col in visible_columns %}checked{% endif %}>
+                            <label class="form-check-label ms-2" for="col_{{ loop.index + half }}">{{ col }}</label>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4 mt-3 mt-lg-0">
-                <label class="form-label"><b>Ordem de Exibição (Arraste para reordenar):</b></label>
+        </div>
+        <div class="col-lg-5 mb-4">
+            <div class="main-card h-100 mx-0" style="max-width: none;">
+                <h3 class="mb-4">Ordem das Colunas</h3>
+                <p class="text-secondary small">Arraste os itens da lista abaixo para reordenar.</p>
                 <ul id="sortable-list" class="list-group">
                     {% for col in column_order %}
-                        <li class="list-group-item" data-col-name="{{ col }}">{{ col }}</li>
+                    <li class="list-group-item bg-dark" data-col-name="{{ col }}">
+                        <i class="fas fa-grip-vertical me-3 text-secondary" title="Arraste para reordenar"></i> {{ col }}
+                    </li>
                     {% endfor %}
                 </ul>
-                <textarea name="column_order" id="column_order_textarea" style="display:none;"></textarea>
+                <textarea name="column_order" id="column_order_textarea" class="d-none"></textarea>
             </div>
         </div>
     </div>
-    
-    <div class="text-center">
-        <button type="submit" class="btn btn-primary btn-lg">Salvar Configurações</button>
-    </div>
 </form>
-
 {% endblock %}
 
 {% block scripts %}
+<script> const DEFAULT_COLUMNS_FROM_FLASK = {{ DEFAULT_COLUMNS | tojson }}; </script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const checkboxes = document.querySelectorAll('.column-checkbox');
-        const sortableList = document.getElementById('sortable-list');
-        const orderTextarea = document.getElementById('column_order_textarea');
-
-        // Função para atualizar a lista arrastável com base nos checkboxes
-        function updateSortableList() {
-            const visibleColumns = new Set();
-            checkboxes.forEach(cb => {
-                if (cb.checked) {
-                    visibleColumns.add(cb.value);
-                }
-            });
-
-            // Remove da lista os itens que foram desmarcados
-            Array.from(sortableList.children).forEach(item => {
-                if (!visibleColumns.has(item.dataset.colName)) {
-                    item.remove();
-                }
-            });
-
-            // Adiciona na lista os itens que foram marcados e ainda não existem
-            visibleColumns.forEach(colName => {
-                if (!sortableList.querySelector(`[data-col-name="${colName}"]`)) {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'list-group-item';
-                    listItem.dataset.colName = colName;
-                    listItem.textContent = colName;
-                    sortableList.appendChild(listItem);
-                }
-            });
-            updateTextarea();
-        }
-
-        // Função para ler a ordem da lista visual e atualizar o campo escondido
-        function updateTextarea() {
-            const currentOrder = Array.from(sortableList.children).map(item => item.dataset.colName);
-            orderTextarea.value = currentOrder.join('\n');
-        }
-
-        // Inicializa o SortableJS na nossa lista
-        new Sortable(sortableList, {
-            animation: 150,
-            ghostClass: 'bg-light',
-            // A cada vez que a ordem muda (após arrastar), atualiza o campo escondido
-            onEnd: function () {
-                updateTextarea();
-            }
-        });
-
-        // Adiciona o evento de 'change' para cada checkbox
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', updateSortableList);
-        });
-
-        // Atualiza o textarea inicial
-        updateTextarea();
-    });
-</script>
+<script src="{{ url_for('static', filename='js/config_manager.js') }}"></script>
 {% endblock %}
