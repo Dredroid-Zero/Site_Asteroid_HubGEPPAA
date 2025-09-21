@@ -88,10 +88,14 @@ def download_table():
     column_order = [col for col in session.get('column_order', []) if col in df.columns]
     if not column_order:
         column_order = list(df.columns)
-    csv_data = df.to_csv(index=False, columns=column_order, encoding='utf-8')
+    
+    # --- ALTERAÇÃO PRINCIPAL AQUI ---
+    # Usamos sep=';' para o Excel em português e encoding='latin-1' para compatibilidade de caracteres
+    csv_data = df.to_csv(index=False, columns=column_order, encoding='latin-1', sep=';')
+
     return Response(
         csv_data,
-        mimetype="text/csv",
+        mimetype="text/csv; charset=latin-1",
         headers={"Content-disposition": f"attachment; filename={active_table_name.replace(' ', '_')}.csv"}
     )
 
