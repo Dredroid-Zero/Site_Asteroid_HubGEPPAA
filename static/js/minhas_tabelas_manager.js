@@ -1,4 +1,48 @@
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- LÓGICA DAS DICAS INTELIGENTES ---
+    const manageAlert = document.getElementById('manage-tables-alert');
+    const reanalyzeAlert = document.getElementById('reanalyze-alert');
+    const reanalyzeButtonContainer = document.getElementById('reanalyze-button-container'); // O novo contêiner do botão
+
+    // Função para mostrar a segunda dica e ativar o destaque
+    function showReanalyzeTip() {
+        if (reanalyzeAlert && localStorage.getItem('reanalyzeAlertDismissed') !== 'true') {
+            reanalyzeAlert.classList.remove('d-none');
+            if (reanalyzeButtonContainer) {
+                reanalyzeButtonContainer.classList.add('reanalyze-highlight-active');
+            }
+        }
+    }
+
+    // Lógica para a primeira dica (Gerenciar)
+    if (manageAlert) {
+        if (localStorage.getItem('manageTablesAlertDismissed') === 'true') {
+            manageAlert.classList.add('d-none');
+        }
+        manageAlert.addEventListener('close.bs.alert', function () {
+            localStorage.setItem('manageTablesAlertDismissed', 'true');
+            // Ao fechar a primeira, chama a função para mostrar a segunda
+            showReanalyzeTip();
+        });
+    }
+
+    // Lógica para a segunda dica (Reanalisar)
+    if (reanalyzeAlert) {
+        // Se a primeira dica já foi fechada no passado E a segunda ainda não foi, mostra a segunda
+        if (localStorage.getItem('manageTablesAlertDismissed') === 'true' && localStorage.getItem('reanalyzeAlertDismissed') !== 'true') {
+             showReanalyzeTip(); // Chama a função que também ativa o destaque
+        }
+        reanalyzeAlert.addEventListener('close.bs.alert', function () {
+            localStorage.setItem('reanalyzeAlertDismissed', 'true');
+            // Ao fechar a segunda dica, remove o destaque
+            if (reanalyzeButtonContainer) {
+                reanalyzeButtonContainer.classList.remove('reanalyze-highlight-active');
+            }
+        });
+    }
+
+
     const tableBody = document.getElementById('table-body-sortable');
     const managementPanel = document.querySelector('.main-card');
     const contentCard = document.querySelector('.results-card');
@@ -102,29 +146,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const reanalyzeForm = document.getElementById('reanalyze-form');
     if (reanalyzeForm) {
         reanalyzeForm.addEventListener('submit', function() {
-            // Pega os elementos da tela de carregamento
             const loadingOverlay = document.getElementById('loading-overlay');
-            const progressBar = document.getElementById('progress-bar-inner');
-            const asteroidIcon = document.getElementById('asteroid-icon');
-            const progressTitle = document.getElementById('progress-title');
-            const chunksText = document.getElementById('progress-chunks-text');
-
             if (loadingOverlay) {
-                // Mostra a tela de carregamento
                 loadingOverlay.style.display = 'flex';
-                if(progressTitle) progressTitle.textContent = 'Reanalisando dados...';
-                if(chunksText) chunksText.textContent = 'Isso pode levar alguns instantes.';
-
-                // Animação de progresso simples
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 2;
-                    if (progressBar) progressBar.style.width = progress + '%';
-                    if (asteroidIcon) asteroidIcon.style.left = `calc(${progress}% - 15px)`;
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                    }
-                }, 80); // Um pouco mais rápido que a busca normal
             }
         });
     }

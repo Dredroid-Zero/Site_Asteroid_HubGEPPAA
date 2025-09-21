@@ -5,6 +5,17 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <h1 class="display-5 fw-bold m-0">Minhas Tabelas</h1>
 </div>
+
+<div class="alert alert-info alert-dismissible fade show" id="manage-tables-alert" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-info-circle fa-lg me-3"></i>
+        <div>
+            <strong>Dica:</strong> Precisa de mais organização? Otimize seu trabalho criando tabelas separadas. Use o menu 'Gerenciar...' para criar, renomear ou excluir suas áreas de análise.
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
 <div class="main-card mx-auto mb-4">
     <div class="d-flex flex-wrap gap-3 align-items-center">
         <div class="d-flex align-items-center gap-2">
@@ -54,14 +65,27 @@
         <h4 class="m-0">Conteúdo: <span class="text-info">{{ active_table_name }}</span></h4>
         <div class="d-flex gap-2 align-items-center">
             
-            <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Reanalisar Conteúdo" data-bs-content="Busca novamente os dados de todos os objetos na tabela para obter as informações mais recentes. Pode levar um tempo para concluir.">
-                <i class="fas fa-question-circle text-secondary"></i>
-            </span>
-            <form id="reanalyze-form" action="{{ url_for('reanalyze') }}" method="POST" onsubmit="if(confirm('Isso buscará novamente os dados de todos os objetos nesta tabela. Pode demorar um pouco. Deseja continuar?')) { document.getElementById('loading-overlay').style.display = 'flex'; return true; } else { return false; }">
-                <button type="submit" class="btn btn-success btn-pulsate">
-                    <i class="fas fa-sync-alt me-2"></i>Reanalisar
-                </button>
-            </form>
+            <div class="d-flex align-items-center position-relative"> 
+                <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Reanalisar Conteúdo" data-bs-content="Busca novamente os dados de todos os objetos na tabela para obter as informações mais recentes. Pode levar um tempo para concluir.">
+                    <i class="fas fa-question-circle text-secondary me-2"></i>
+                </span>
+                <form id="reanalyze-form" action="{{ url_for('reanalyze') }}" method="POST" onsubmit="if(confirm('Isso buscará novamente os dados de todos os objetos nesta tabela. Pode demorar um pouco. Deseja continuar?')) { document.getElementById('loading-overlay').style.display = 'flex'; return true; } else { return false; }">
+                    <div id="reanalyze-button-container" class="btn-highlight-wrapper"> 
+                        <button type="submit" class="btn btn-success btn-pulsate">
+                            <i class="fas fa-sync-alt me-2"></i>Reanalisar
+                        </button>
+                    </div>
+                </form>
+                <div class="alert alert-info alert-dismissible fade show d-none reanalyze-tip-absolute" id="reanalyze-alert" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-sync-alt fa-lg me-3"></i>
+                        <div>
+                            <strong>Dica:</strong> O botão 'Reanalisar' busca os dados mais recentes para todos os itens da sua tabela.
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
 
             <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="left" title="Baixar Tabela" data-bs-content="Salva o conteúdo da tabela ativa como um arquivo CSV, que pode ser aberto em programas como Excel.">
                 <a href="{{ url_for('download_table') }}" class="btn btn-outline-success">
@@ -109,6 +133,20 @@
         {% else %}
         <div class="text-center p-5"><p class="text-secondary">Esta tabela está vazia.</p><p class="small text-secondary">Vá para a página de <a href="{{ url_for('index') }}" class="link-light">Busca</a> para encontrar e salvar novos asteroides.</p></div>
         {% endif %}
+    </div>
+</div>
+<div class="modal fade" id="createTableModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_table') }}" method="POST"><div class="modal-header"><h5 class="modal-title">Criar Nova Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><label for="new_name_create" class="form-label">Nome da Nova Tabela:</label><input type="text" name="new_name" id="new_name_create" class="form-control" required></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-success">Criar</button></div></form></div></div></div>
+<div class="modal fade" id="renameTableModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('rename_table') }}" method="POST"><div class="modal-header"><h5 class="modal-title">Renomear Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Renomear tabela: <strong class="text-info">{{ active_table_name }}</strong></p><label for="new_name_rename" class="form-label">Novo nome:</label><input type="text" name="new_name" id="new_name_rename" class="form-control" required></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-warning">Renomear</button></div></form></div></div></div>
+<div class="modal fade" id="deleteTableModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('delete_table') }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir a tabela \'{{ active_table_name }}\' e todos os seus dados? Esta ação não pode ser desfeita.');"><div class="modal-header"><h5 class="modal-title">Excluir Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Você está prestes a excluir permanentemente a tabela <strong class="text-danger">{{ active_table_name }}</strong> e todos os dados contidos nela.</p><p class="fw-bold">Esta ação não pode ser desfeita.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-danger">Sim, Excluir Tabela</button></div></form></div></div></div>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="progress-container">
+        <h4 class="progress-title" id="progress-title">Reanalisando dados...</h4>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar-inner" id="progress-bar-inner"></div>
+            <div class="asteroid-icon" id="asteroid-icon"><i class="fa-solid fa-satellite"></i></div>
+        </div>
+        <p class="progress-chunks-text" id="progress-chunks-text"></p>
     </div>
 </div>
 {% endblock %}
