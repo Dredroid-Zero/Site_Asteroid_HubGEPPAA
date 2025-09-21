@@ -9,14 +9,14 @@
     <div class="d-flex flex-wrap gap-3 align-items-center">
         <div class="d-flex align-items-center gap-2">
             <label for="active_table" class="form-label mb-0 text-nowrap fw-bold fs-5">Tabela Ativa:</label>
-            <form id="table-select-form" method="GET" action="{{ url_for('minhas_tabelas') }}" class="d-inline-block">
+            <form id="table-select-form" method="GET" action="{{ url_for('minhas_tabelas') }}">
                 <select name="active_table" id="active_table" class="form-select" onchange="this.form.submit()">
                     {% for name in saved_tables_names %}<option value="{{ name }}" {% if name == active_table_name %}selected{% endif %}>{{ name }}</option>{% endfor %}
                 </select>
             </form>
         </div>
         <div class="ms-auto d-flex align-items-center gap-2">
-             <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#management-options" aria-expanded="false" aria-controls="management-options"><i class="fas fa-cog me-2"></i>Gerenciar...</button>
+             <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#management-options"><i class="fas fa-cog me-2"></i>Gerenciar...</button>
              <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-html="true" tabindex="0" title="Painel de Controle" data-bs-content="Clique para ver todas as ações para a tabela selecionada."><i class="fas fa-question-circle text-secondary fs-4"></i></span>
         </div>
     </div>
@@ -53,14 +53,22 @@
     <div class="results-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h4 class="m-0">Conteúdo: <span class="text-info">{{ active_table_name }}</span></h4>
         <div class="d-flex gap-2 align-items-center">
+            
             <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Reanalisar Conteúdo" data-bs-content="Busca novamente os dados de todos os objetos na tabela para obter as informações mais recentes. Pode levar um tempo para concluir.">
                 <i class="fas fa-question-circle text-secondary"></i>
             </span>
-            <form id="reanalyze-form" action="{{ url_for('reanalyze') }}" method="POST" class="d-inline-block" onsubmit="if(confirm('Isso buscará novamente os dados de todos os objetos nesta tabela. Pode demorar um pouco. Deseja continuar?')) { document.getElementById('loading-overlay').style.display = 'flex'; return true; } else { return false; }">
+            <form id="reanalyze-form" action="{{ url_for('reanalyze') }}" method="POST" onsubmit="if(confirm('Isso buscará novamente os dados de todos os objetos nesta tabela. Pode demorar um pouco. Deseja continuar?')) { document.getElementById('loading-overlay').style.display = 'flex'; return true; } else { return false; }">
                 <button type="submit" class="btn btn-success btn-pulsate">
                     <i class="fas fa-sync-alt me-2"></i>Reanalisar
                 </button>
             </form>
+
+            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="left" title="Baixar Tabela" data-bs-content="Salva o conteúdo da tabela ativa como um arquivo CSV, que pode ser aberto em programas como Excel.">
+                <a href="{{ url_for('download_table') }}" class="btn btn-outline-success">
+                    <i class="fas fa-download me-2"></i>Baixar
+                </a>
+            </span>
+
         </div>
     </div>
     <div class="p-3">
@@ -101,16 +109,6 @@
         {% else %}
         <div class="text-center p-5"><p class="text-secondary">Esta tabela está vazia.</p><p class="small text-secondary">Vá para a página de <a href="{{ url_for('index') }}" class="link-light">Busca</a> para encontrar e salvar novos asteroides.</p></div>
         {% endif %}
-    </div>
-</div>
-<div class="loading-overlay" id="loading-overlay">
-    <div class="progress-container">
-        <h4 class="progress-title" id="progress-title">Reanalisando dados...</h4>
-        <div class="progress-bar-wrapper">
-            <div class="progress-bar-inner" id="progress-bar-inner"></div>
-            <div class="asteroid-icon" id="asteroid-icon"><i class="fa-solid fa-satellite"></i></div>
-        </div>
-        <p class="progress-chunks-text" id="progress-chunks-text"></p>
     </div>
 </div>
 {% endblock %}
