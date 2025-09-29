@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
 </head>
-<body data-bs-theme="dark">
+<body>
 
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
@@ -23,7 +23,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'index' or request.endpoint == 'mostrar_resultados' %}active{% endif %}" href="{{ url_for('index') }}">Busca</a>
+                        <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Busca</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'minhas_tabelas' %}active{% endif %}" href="{{ url_for('minhas_tabelas') }}">Minhas Tabelas</a>
@@ -36,20 +36,9 @@
         </div>
     </nav>
 
-    <div class="container content-wrapper">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                       {{ message | safe }}
-                       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
+    <main class="container content-wrapper">
         {% block content %}{% endblock %}
-    </div>
+    </main>
     
     <footer class="text-center text-secondary py-4 mt-auto">
         <div class="container">
@@ -63,24 +52,27 @@
         </div>
     </footer>
 
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="progress-container">
-            <p class="progress-title">Analisando Asteroides...</p>
-            <div class="progress-bar-wrapper">
-                <div id="progress-bar" class="progress-bar-inner"></div>
-                <div id="asteroid-icon" class="asteroid-icon">
-                    <i class="fas fa-meteor"></i>
-                </div>
+    <div class="tip-overlay" id="tip-overlay" style="display: none;"></div>
+
+    <button id="skip-tour-btn" class="btn btn-sm btn-secondary" style="display: none; position: fixed; bottom: 20px; left: 20px; z-index: 1100;">
+        <i class="fas fa-times me-2"></i>Pular Tour
+    </button>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+        <div id="dynamic-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong class="me-auto">Dica Rápida</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <p id="progress-chunks" class="progress-chunks-text"></p>
+            <div class="toast-body">
+                </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
-    </script>
+    
     {% block scripts %}{% endblock %}
+
 </body>
 </html>

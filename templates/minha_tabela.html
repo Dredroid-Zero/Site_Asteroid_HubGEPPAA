@@ -16,142 +16,106 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 
-<div class="main-card mx-auto mb-4">
+<div class="main-card mx-auto mb-4" id="management-panel">
     <div class="d-flex flex-wrap gap-3 align-items-center">
         <div class="d-flex align-items-center gap-2">
-            <label for="active_table" class="form-label mb-0 text-nowrap fw-bold fs-5">Tabela Ativa:</label>
-            <form id="table-select-form" method="GET" action="{{ url_for('minhas_tabelas') }}">
-                <select name="active_table" id="active_table" class="form-select" onchange="this.form.submit()">
-                    {% for name in saved_tables_names %}<option value="{{ name }}" {% if name == active_table_name %}selected{% endif %}>{{ name }}</option>{% endfor %}
-                </select>
-            </form>
+            <label for="active_table_select" class="form-label mb-0 text-nowrap fw-bold fs-5">Tabela Ativa:</label>
+            <select id="active_table_select" class="form-select"></select>
         </div>
         <div class="ms-auto d-flex align-items-center gap-2">
              <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#management-options"><i class="fas fa-cog me-2"></i>Gerenciar...</button>
-             <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-html="true" tabindex="0" title="Painel de Controle" data-bs-content="Clique para ver todas as ações para a tabela selecionada."><i class="fas fa-question-circle text-secondary fs-4"></i></span>
+             <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="click" data-bs-html="true" tabindex="0" title="Painel de Controle" data-bs-content="Clique para ver todas as ações para a tabela selecionada."><i class="fas fa-question-circle text-secondary fs-4"></i></span>
         </div>
     </div>
     <div class="collapse mt-3" id="management-options">
         <hr>
         <h6 class="text-secondary text-uppercase small mt-3">Ações da Tabela</h6>
         <div class="d-flex flex-wrap gap-2 pt-2">
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Criar Nova Tabela" data-bs-content="Abre uma janela para criar uma nova tabela vazia.">
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="bottom" title="Criar Nova Tabela" data-bs-content="Abre uma janela para criar uma nova tabela vazia.">
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createTableModal"><i class="fas fa-plus me-2"></i>Criar Nova</button>
             </span>
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Renomear Tabela Ativa" data-bs-content="Permite alterar o nome da tabela '{{ active_table_name }}' que está selecionada.">
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="bottom" title="Renomear Tabela Ativa" data-bs-content="Permite alterar o nome da tabela que está selecionada.">
                 <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#renameTableModal"><i class="fas fa-edit me-2"></i>Renomear Tabela</button>
             </span>
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Excluir Tabela Ativa" data-bs-content="Apaga permanentemente a tabela selecionada e todos os seus dados. Cuidado, esta ação não pode ser desfeita!">
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="bottom" title="Excluir Tabela Ativa" data-bs-content="Apaga permanentemente a tabela selecionada. Cuidado, esta ação não pode ser desfeita!">
                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTableModal"><i class="fas fa-times-circle me-2"></i>Excluir Tabela</button>
             </span>
         </div>
         <hr>
         <h6 class="text-secondary text-uppercase small mt-3">Ações no Conteúdo</h6>
         <div class="d-flex flex-wrap gap-2 pt-2">
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Personalizar Colunas" data-bs-content="Abre a página de Configurações para escolher quais colunas exibir e reordená-las.">
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="bottom" title="Personalizar Colunas" data-bs-content="Abre a página de Configurações para escolher quais colunas exibir e reordená-las.">
                 <a href="{{ url_for('configuracoes') }}" class="btn btn-outline-light"><i class="fas fa-columns me-2"></i>Personalizar Colunas</a>
             </span>
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Organizar Linhas" data-bs-content="Ativa o modo de arrastar e soltar para que você possa reordenar as linhas da tabela uma por uma.">
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="bottom" title="Organizar Linhas" data-bs-content="Ativa o modo de arrastar e soltar para reordenar as linhas da tabela.">
                 <button id="reorder-rows-btn" class="btn btn-outline-info"><i class="fas fa-arrows-alt-v me-2"></i>Organizar Linhas</button>
             </span>
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Excluir Linhas" data-bs-content="Ativa o modo de seleção com checkboxes para remover linhas específicas da tabela.">
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="bottom" title="Excluir Linhas" data-bs-content="Ativa o modo de seleção para remover linhas específicas da tabela.">
                 <button id="enable-delete-mode" class="btn btn-outline-danger"><i class="fas fa-trash-alt me-2"></i>Excluir Linhas</button>
             </span>
         </div>
     </div>
 </div>
+
 <div class="results-card">
     <div class="results-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h4 class="m-0">Conteúdo: <span class="text-info">{{ active_table_name }}</span></h4>
+        <h4 class="m-0">Conteúdo: <span class="text-info dynamic-active-table-name"></span></h4>
         <div class="d-flex gap-2 align-items-center">
-            
-            <div class="d-flex align-items-center position-relative"> 
-                <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Reanalisar Conteúdo" data-bs-content="Busca novamente os dados de todos os objetos na tabela para obter as informações mais recentes. Pode levar um tempo para concluir.">
-                    <i class="fas fa-question-circle text-secondary me-2"></i>
-                </span>
-                <form id="reanalyze-form" action="{{ url_for('reanalyze') }}" method="POST" onsubmit="if(confirm('Isso buscará novamente os dados de todos os objetos nesta tabela. Pode demorar um pouco. Deseja continuar?')) { document.getElementById('loading-overlay').style.display = 'flex'; return true; } else { return false; }">
-                    <div id="reanalyze-button-container" class="btn-highlight-wrapper"> 
-                        <button type="submit" class="btn btn-success btn-pulsate">
-                            <i class="fas fa-sync-alt me-2"></i>Reanalisar
-                        </button>
-                    </div>
+            <span data-bs-toggle="popover" data-bs-trigger="click" data-bs-placement="top" title="Reanalisar Dados" data-bs-content="Busca novamente os dados mais recentes para todos os objetos nesta tabela. As informações antigas serão substituídas.">
+                <form id="reanalyze-form" onsubmit="return false;">
+                    <button type="submit" class="btn btn-success"><i class="fas fa-sync-alt me-2"></i>Reanalisar</button>
                 </form>
-                <div class="alert alert-info alert-dismissible fade show d-none reanalyze-tip-absolute" id="reanalyze-alert" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-sync-alt fa-lg me-3"></i>
-                        <div>
-                            <strong>Dica:</strong> O botão 'Reanalisar' busca os dados mais recentes para todos os itens da sua tabela.
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </div>
-
-            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="left" title="Baixar Tabela" data-bs-content="Salva o conteúdo da tabela ativa como um arquivo CSV, que pode ser aberto em programas como Excel.">
-                <a href="{{ url_for('download_table') }}" class="btn btn-outline-success">
-                    <i class="fas fa-download me-2"></i>Baixar
-                </a>
             </span>
-
+            <button id="download-csv-btn" class="btn btn-outline-success"><i class="fas fa-download me-2"></i>Baixar</button>
         </div>
     </div>
     <div class="p-3">
-        {% if changes %}
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            <strong>{{ changes.summary }}</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endif %}
-
-        {% if table_data %}
-        <div id="reorder-controls" class="alert alert-warning d-none flex-wrap gap-2 align-items-center">
-            <i class="fas fa-arrows-alt me-2"></i><strong>Modo de Reordenação Ativo:</strong> Arraste as linhas para a ordem desejada.
-            <div class="ms-auto d-flex gap-2"><button id="save-reorder-btn" class="btn btn-success"><i class="fas fa-check me-2"></i>Salvar Ordem</button><button id="cancel-reorder-btn" class="btn btn-secondary">Cancelar</button></div>
-        </div>
-        <div id="delete-controls" class="alert alert-danger d-none flex-wrap gap-2 align-items-center">
-             <i class="fas fa-exclamation-triangle me-2"></i><strong>Modo de Exclusão Ativo:</strong> Marque as linhas para remover.
-            <div class="ms-auto d-flex gap-2"><form id="delete-rows-form" action="{{ url_for('delete_rows') }}" method="POST"><input type="hidden" name="rows_to_delete" id="rows_to_delete_input"><button id="confirm-delete-btn" type="submit" class="btn btn-danger" disabled><i class="fas fa-trash-alt me-2"></i>Excluir Selecionadas</button></form><button id="cancel-delete-mode" class="btn btn-secondary">Cancelar</button></div>
-        </div>
+        <div id="reorder-controls" class="alert alert-warning d-none flex-wrap gap-2 align-items-center"><i class="fas fa-arrows-alt me-2"></i><strong>Modo de Reordenação:</strong> Arraste as linhas.<div class="ms-auto d-flex gap-2"><button id="save-reorder-btn" class="btn btn-success"><i class="fas fa-check me-2"></i>Salvar Ordem</button><button id="cancel-reorder-btn" class="btn btn-secondary">Cancelar</button></div></div>
+        <div id="delete-controls" class="alert alert-danger d-none flex-wrap gap-2 align-items-center"><i class="fas fa-exclamation-triangle me-2"></i><strong>Modo de Exclusão:</strong> Marque as linhas.<div class="ms-auto d-flex gap-2"><form id="delete-rows-form" onsubmit="return false;"><button id="confirm-delete-btn" type="submit" class="btn btn-danger" disabled><i class="fas fa-trash-alt me-2"></i>Excluir</button></form><button id="cancel-delete-mode" class="btn btn-secondary">Cancelar</button></div></div>
+        
         <div class="table-responsive">
             <table class="table table-striped table-hover">
-                <thead><tr><th class="control-col"></th>{% for header in table_headers %}<th>{{ header }}</th>{% endfor %}</tr></thead>
-                <tbody id="table-body-sortable">
-                    {% for row in table_data %}
-                    <tr data-object-name="{{ row['Objeto'] }}">
-                        <td class="control-col"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><input class="form-check-input row-checkbox" type="checkbox"></td>
-                        {% for header in table_headers %}
-                            <td class="{% if changes and header in changes.updated_cells.get(row['Objeto'], []) %}cell-changed{% endif %}">
-                                {{ row.get(header, '-') }}
-                            </td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <thead><tr id="table-head-row"></tr></thead>
+                <tbody id="table-body-sortable"></tbody>
             </table>
         </div>
-        {% else %}
-        <div class="text-center p-5"><p class="text-secondary">Esta tabela está vazia.</p><p class="small text-secondary">Vá para a página de <a href="{{ url_for('index') }}" class="link-light">Busca</a> para encontrar e salvar novos asteroides.</p></div>
-        {% endif %}
-    </div>
-</div>
-<div class="modal fade" id="createTableModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('create_table') }}" method="POST"><div class="modal-header"><h5 class="modal-title">Criar Nova Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><label for="new_name_create" class="form-label">Nome da Nova Tabela:</label><input type="text" name="new_name" id="new_name_create" class="form-control" required></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-success">Criar</button></div></form></div></div></div>
-<div class="modal fade" id="renameTableModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('rename_table') }}" method="POST"><div class="modal-header"><h5 class="modal-title">Renomear Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Renomear tabela: <strong class="text-info">{{ active_table_name }}</strong></p><label for="new_name_rename" class="form-label">Novo nome:</label><input type="text" name="new_name" id="new_name_rename" class="form-control" required></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-warning">Renomear</button></div></form></div></div></div>
-<div class="modal fade" id="deleteTableModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form action="{{ url_for('delete_table') }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir a tabela \'{{ active_table_name }}\' e todos os seus dados? Esta ação não pode ser desfeita.');"><div class="modal-header"><h5 class="modal-title">Excluir Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Você está prestes a excluir permanentemente a tabela <strong class="text-danger">{{ active_table_name }}</strong> e todos os dados contidos nela.</p><p class="fw-bold">Esta ação não pode ser desfeita.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-danger">Sim, Excluir Tabela</button></div></form></div></div></div>
-
-<div class="loading-overlay" id="loading-overlay">
-    <div class="progress-container">
-        <h4 class="progress-title" id="progress-title">Reanalisando dados...</h4>
-        <div class="progress-bar-wrapper">
-            <div class="progress-bar-inner" id="progress-bar-inner"></div>
-            <div class="asteroid-icon" id="asteroid-icon"><i class="fa-solid fa-satellite"></i></div>
+        <div id="empty-table-message" class="text-center p-5 d-none">
+            <p class="text-secondary">Esta tabela está vazia.</p>
+            <p class="small text-secondary">Vá para a página de <a href="{{ url_for('index') }}" class="link-light">Busca</a> para encontrar e salvar novos asteroides.</p>
         </div>
-        <p class="progress-chunks-text" id="progress-chunks-text"></p>
     </div>
 </div>
+
+<div class="modal fade" id="createTableModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Criar Nova Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><label for="new_name_create_input" class="form-label">Nome da Nova Tabela:</label><input type="text" id="new_name_create_input" class="form-control" required></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" id="confirm-create-table" class="btn btn-success">Criar</button></div>
+    </div></div>
+</div>
+<div class="modal fade" id="renameTableModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Renomear Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><p>Renomear tabela: <strong class="text-info dynamic-active-table-name"></strong></p><label for="new_name_rename_input" class="form-label">Novo nome:</label><input type="text" id="new_name_rename_input" class="form-control" required></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" id="confirm-rename-table" class="btn btn-warning">Renomear</button></div>
+    </div></div>
+</div>
+<div class="modal fade" id="deleteTableModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Excluir Tabela</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><p>Você está prestes a excluir permanentemente a tabela <strong class="text-danger dynamic-active-table-name"></strong>.</p><p class="fw-bold">Esta ação não pode ser desfeita.</p></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" id="confirm-delete-table" class="btn btn-danger">Sim, Excluir</button></div>
+    </div></div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay" style="display: none;">
+    <div class="progress-container"><h4 class="progress-title" id="progress-title">Processando...</h4></div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script src="{{ url_for('static', filename='js/minhas_tabelas_manager.js') }}"></script>
 {% endblock %}

@@ -7,10 +7,12 @@
     <p class="text-secondary mb-4">Personalize a exibição das colunas nas tabelas.</p>
 </div>
 
-<form method="POST">
+<!-- O formulário agora não tem 'method', pois o JS cuida de tudo -->
+<form id="settings-form">
     <div class="text-center mb-4">
         <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="bottom" title="Salvar Configurações" data-bs-content="Aplica as mudanças de visibilidade e ordem de colunas a todas as suas tabelas.">
-            <button type="submit" class="btn btn-primary btn-lg">
+            <!-- O botão agora tem um ID para o JS encontrá-lo -->
+            <button type="button" id="save-settings-btn" class="btn btn-primary btn-lg">
                 <i class="fas fa-save me-2"></i> Salvar Configurações
             </button>
         </span>
@@ -36,44 +38,21 @@
                         <button type="button" id="select-default" class="btn btn-sm btn-outline-info">Padrão</button>
                      </span>
                  </div>
-                <div class="row">
-                    {% set half = (ALL_COLUMNS|length / 2)|round|int %}
-                    <div class="col-md-6">
-                        {% for col in ALL_COLUMNS[:half] %}
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input column-checkbox" type="checkbox" name="visible_columns" value="{{ col }}" id="col_{{ loop.index }}" {% if col in visible_columns %}checked{% endif %}>
-                            <label class="form-check-label ms-2" for="col_{{ loop.index }}">{{ col }}</label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-md-6">
-                        {% for col in ALL_COLUMNS[half:] %}
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input column-checkbox" type="checkbox" name="visible_columns" value="{{ col }}" id="col_{{ loop.index + half }}" {% if col in visible_columns %}checked{% endif %}>
-                            <label class="form-check-label ms-2" for="col_{{ loop.index + half }}">{{ col }}</label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                 <!-- Contentor vazio para os checkboxes -->
+                <div id="column-visibility-container" class="row"></div>
             </div>
         </div>
         <div class="col-lg-5 mb-4">
             <div class="main-card h-100 mx-0" style="max-width: none;">
                 <h3 class="mb-4 d-flex align-items-center gap-2">
                     Ordem das Colunas
-                    <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Ordenação de Colunas" data-bs-content="Arraste e solte os nomes das colunas para definir a ordem em que elas aparecerão, da esquerda para a direita, nas suas tabelas.">
+                    <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="hover focus" tabindex="0" title="Ordenação de Colunas" data-bs-content="Arraste e solte os nomes das colunas para definir a ordem em que elas aparecerão.">
                         <i class="fas fa-question-circle text-secondary fs-5"></i>
                     </span>
                 </h3>
                 <p class="text-secondary small">Arraste os itens da lista abaixo para reordenar.</p>
-                <ul id="sortable-list" class="list-group">
-                    {% for col in column_order %}
-                    <li class="list-group-item bg-dark" data-col-name="{{ col }}">
-                        <i class="fas fa-grip-vertical me-3 text-secondary" title="Arraste para reordenar"></i> {{ col }}
-                    </li>
-                    {% endfor %}
-                </ul>
-                <textarea name="column_order" id="column_order_textarea" class="d-none"></textarea>
+                <!-- Contentor vazio para a lista de arrastar -->
+                <ul id="sortable-list" class="list-group"></ul>
             </div>
         </div>
     </div>
@@ -81,7 +60,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script> const DEFAULT_COLUMNS_FROM_FLASK = {{ DEFAULT_COLUMNS | tojson }}; </script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script src="{{ url_for('static', filename='js/configuracoes_manager.js') }}"></script>
 {% endblock %}
