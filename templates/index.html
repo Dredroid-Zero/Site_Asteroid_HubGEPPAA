@@ -3,6 +3,7 @@
 
 {% block content %}
 
+<!-- SEÇÃO DE BUSCA -->
 <div id="search-section">
     <div class="main-card mx-auto">
         <div class="text-center mb-4">
@@ -22,6 +23,7 @@
     </div>
 </div>
 
+<!-- SEÇÃO DE RESULTADOS -->
 <div id="results-section" class="d-none">
 
     <div class="alert alert-success alert-dismissible fade show" id="save-results-alert" role="alert" style="display: none;">
@@ -84,11 +86,7 @@
     </div>
 </div>
 
-<div class="loading-overlay" id="loading-overlay" style="display: none;">
-    <div class="progress-container">
-        <h4 class="progress-title" id="progress-title">Buscando dados...</h4>
-    </div>
-</div>
+<!-- O BLOCO "loading-overlay" FOI REMOVIDO DESTE ARQUIVO -->
 
 {% endblock %}
 

@@ -143,8 +143,7 @@ body {
     cursor: grabbing;
 }
 
-
-/* --- ANIMAÇÃO DE SPOTLIGHT ATUALIZADA --- */
+/* --- ANIMAÇÃO DE SPOTLIGHT --- */
 @keyframes glow {
     0% { box-shadow: 0 0 0px rgba(var(--bs-info-rgb), 0.4); }
     50% { box-shadow: 0 0 25px 12px rgba(var(--bs-info-rgb), 0.7); }
@@ -157,16 +156,12 @@ body {
     transition: box-shadow 0.3s ease-in-out;
 }
 
-
-/* --- NOVO ESTILO PARA AS DICAS DINÂMICAS (POPOVERS) --- */
+/* --- ESTILO DAS DICAS DINÂMICAS (POPOVERS) --- */
 .popover-tip {
     --bs-popover-max-width: 300px;
     --bs-popover-border-color: var(--bs-info);
     --bs-popover-header-bg: #192a56;
     --bs-popover-header-color: var(--text-primary);
-    --bs-popover-body-padding-x: 1rem;
-    --bs-popover-body-padding-y: 0.75rem;
-    
     background-image: linear-gradient(145deg, #273c75, #192a56);
     box-shadow: 0 0 25px rgba(var(--bs-info-rgb), 0.5);
     border-width: 2px;
@@ -176,25 +171,81 @@ body {
     font-size: 1rem;
     font-weight: bold;
 }
+.popover-tip .popover-body {
+    padding-bottom: 2.5rem;
+}
+
+/* --- LÓGICA DE BLOQUEIO INTELIGENTE --- */
+.content-locked {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.alert.in-focus {
+    position: relative;
+    z-index: 1050;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.popover-skip-button {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.75rem;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+}
 
 
-/* --- NOVOS ESTILOS PARA BLOQUEIO DE TELA DAS DICAS --- */
+/* --- NOVA ESTRATÉGIA DE TELA DE CARREGAMENTO --- */
 
-/* O fundo escurecido que bloqueia a interação */
-.tip-overlay {
+.progress-bar {
+    background-color: var(--bs-info);
+    transition: width 0.4s ease-out;
+}
+
+.progress-asteroid {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) rotate(315deg);
+    color: var(--bs-info);
+    font-size: 24px;
+    text-shadow: 0 0 10px rgba(var(--bs-info-rgb), 0.8), 0 0 20px rgba(var(--bs-info-rgb), 0.5);
+    z-index: 10;
+    transition: left 0.4s ease-out;
+    margin-left: -12px;
+}
+
+/* Por padrão, a tela de carregamento está escondida */
+.loading-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 1040; /* Fica abaixo dos alertas, mas acima do resto */
+    z-index: 2000;
 }
 
-/* Garante que os alertas fiquem na frente do fundo bloqueador */
-.alert {
-    position: relative; /* Necessário para que o z-index funcione */
-    z-index: 1045;
+/* Quando o body tem a classe 'loading-active'... */
+body.loading-active {
+    overflow: hidden; /* Evita que o fundo da página role */
+}
+
+/* ...nós mostramos a tela de carregamento... */
+body.loading-active .loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ...e ofuscamos/bloqueamos todo o resto do conteúdo que é filho direto do body */
+body.loading-active > *:not(.loading-overlay) {
+    filter: blur(5px);
+    opacity: 0.5;
+    pointer-events: none;
+    transition: all 0.3s ease-in-out;
 }

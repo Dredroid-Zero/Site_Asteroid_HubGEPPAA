@@ -4,157 +4,139 @@ window.advanceTour = (currentStep) => {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Seções da página
+    // --- SELETORES DE ELEMENTOS ---
     const searchSection = document.getElementById('search-section');
     const resultsSection = document.getElementById('results-section');
-    const resultsCard = document.querySelector('.results-card');
-    const mainCard = document.querySelector('.main-card');
-
-    // Elementos do formulário de busca
     const searchForm = document.getElementById('search-form');
     const searchInput = document.getElementById('identificadores-input');
-    
-    // Dicas (Alertas)
+    const searchButton = document.getElementById('search-button');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressAsteroid = document.getElementById('progress-asteroid');
+    const progressTitle = document.getElementById('progress-title');
+    const resultsCard = document.querySelector('.results-card');
+    const mainCard = document.querySelector('.main-card');
     const saveResultsAlert = document.getElementById('save-results-alert');
     const customizeViewAlert = document.getElementById('customize-view-alert');
-
-    // Elementos da área de resultados
     const newSearchBtn = document.getElementById('new-search-btn');
     const tableSelect = document.getElementById('table-select-dropdown');
     const initialSaveButtons = document.getElementById('initial-save-buttons');
-    
-    // --- LÓGICA DAS DICAS DINÂMICAS (VERSÃO FINAL REESCRITA) ---
-
-    // Dica 1: Ao focar na caixa de texto
-    searchInput.addEventListener('focus', function() {
-        if (localStorage.getItem('multiSearchTipShown') === 'true') return;
-        
-        const tipContent = 'Você pode pesquisar vários objetos de uma vez! Basta colar os códigos na caixa de texto, garantindo que cada um fique em uma linha separada.';
-        showDynamicPopover(searchInput, 'Busca em Lote', tipContent, {
-            placement: 'top',
-            timeout: 10000,       // Fecha sozinho em 10s
-            showCloseButton: true  // Mostra o 'x'
-        });
-        localStorage.setItem('multiSearchTipShown', 'true');
-    }, { once: true });
-
-    // Gatilho para o "Mini-Tour" ao fechar o alerta principal
-    if (saveResultsAlert) {
-        saveResultsAlert.addEventListener('close.bs.alert', function () {
-            startGuidedTour();
-        });
-    }
-    
-    // Orquestrador do Tour Guiado
-    function startGuidedTour() {
-        if (localStorage.getItem('guidedTourShown') === 'true') {
-            unlockContent();
-            return;
-        }
-        localStorage.setItem('guidedTourShown', 'true');
-        lockContent([resultsCard, mainCard]); // Bloqueia os cards
-        
-        showTourStep(1);
-    }
-    
-    function showTourStep(step) {
-        clearAllPopoversAndTimers();
-
-        if (step === 1) {
-            const tipContent = 'Primeiro, escolha em qual das suas tabelas você quer salvar estes resultados.';
-            showDynamicPopover(tableSelect.parentNode, 'Passo 1 de 2', tipContent, {
-                tourStep: { current: 1, total: 2 },
-                showCloseButton: false // NÃO mostra o 'x'
-            });
-            const timeoutId = setTimeout(() => advanceTour(1), 10000); // Avança sozinho em 10s
-            tourTimeouts.push(timeoutId);
-        } else if (step === 2) {
-            const tipContent = 'Agora, salve tudo de uma vez ou clique para selecionar linhas específicas.';
-            showDynamicPopover(initialSaveButtons, 'Passo 2 de 2', tipContent, {
-                tourStep: { current: 2, total: 2 },
-                showCloseButton: false // NÃO mostra o 'x'
-            });
-            const timeoutId = setTimeout(() => finishTour(), 10000); // Finaliza sozinho em 10s
-            tourTimeouts.push(timeoutId);
-        }
-    }
-
-    // Função global para avançar o tour
-    window.advanceTour = (currentStep) => {
-        clearAllPopoversAndTimers(); // <-- CORREÇÃO: Limpa a dica anterior primeiro
-        if (currentStep < 2) {
-            showTourStep(currentStep + 1);
-        } else {
-            finishTour();
-        }
-    }
-    
-    function finishTour() {
-        clearAllPopoversAndTimers();
-        unlockContent();
-        console.log("Tour finalizado.");
-    }
-
-    // Função de limpeza robusta
-    function clearAllPopoversAndTimers() {
-        tourTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-        tourTimeouts = [];
-        // Usa a lista de popovers ativos do main.js para garantir que todos sejam fechados
-        activePopovers.forEach(popover => popover.dispose());
-        activePopovers = [];
-        document.querySelectorAll('.spotlight').forEach(el => el.classList.remove('spotlight'));
-    }
-
-    // --- CÓDIGO COMPLETO DAS FUNÇÕES RESTANTES (sem abreviações) ---
-    const searchButton = document.getElementById('search-button');
-    const loadingOverlay = document.getElementById('loading-overlay');
     const resultsTbody = document.getElementById('results-tbody');
     const resultsThead = document.getElementById('results-thead');
     const saveAllBtn = document.getElementById('save-all-btn');
     const enableSelectModeBtn = document.getElementById('enable-select-mode-btn');
     const cancelSelectModeBtn = document.getElementById('cancel-select-mode-btn');
     const saveSelectedBtn = document.getElementById('save-selected-btn');
+    
     let currentSearchResults = [];
 
+    // --- LÓGICA DE BUSCA COM PROGRESSO EM LOTES ---
     searchForm.addEventListener('submit', async function(event) {
         event.preventDefault();
-        const query = searchInput.value.trim();
-        if (!query) return;
-        showLoading(true, 'Buscando dados...');
+
+        const allIdentifiers = searchInput.value.trim().split('\n').filter(line => line.trim() !== '');
+        if (allIdentifiers.length === 0) return;
+
+        const CHUNK_SIZE = 25;
+        const chunks = [];
+        for (let i = 0; i < allIdentifiers.length; i += CHUNK_SIZE) {
+            chunks.push(allIdentifiers.slice(i, i + CHUNK_SIZE));
+        }
+
+        let totalResults = [];
+        showLoading(true);
+        resetProgressBar();
+
         try {
-            const response = await fetch('/api/run-search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identificadores: query })
-            });
-            if (!response.ok) throw new Error('A resposta do servidor não foi OK.');
-            const results = await response.json();
-            if (results && results.length > 0) {
-                currentSearchResults = results;
-                renderResults(results);
-                showSearch(false);
-                const alertsToShow = [];
-                if (saveResultsAlert && localStorage.getItem('alert-dismissed-save-results-alert') !== 'true') {
-                    saveResultsAlert.style.display = 'flex';
-                    alertsToShow.push(saveResultsAlert);
-                }
-                if (customizeViewAlert && localStorage.getItem('alert-dismissed-customize-view-alert') !== 'true') {
-                    customizeViewAlert.style.display = 'flex';
-                    alertsToShow.push(customizeViewAlert);
-                }
-                if (alertsToShow.length > 0) {
-                    lockContent([resultsCard]);
-                }
-            } else {
-                alert('Nenhum dado válido foi encontrado.');
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const chunkNumber = i + 1;
+                
+                updateProgressText(`Analisando lote ${chunkNumber} de ${chunks.length}...`);
+                
+                const response = await fetch('/api/run-search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identificadores: chunk.join('\n') })
+                });
+
+                if (!response.ok) throw new Error(`Erro no lote ${chunkNumber}: ${response.statusText}`);
+
+                const chunkResults = await response.json();
+                if (chunkResults.length > 0) totalResults.push(...chunkResults);
+                
+                const progress = (chunkNumber / chunks.length) * 100;
+                updateProgressBar(progress);
+                
+                await new Promise(resolve => setTimeout(resolve, 500)); 
             }
+
+            updateProgressText('Finalizando...');
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            if (totalResults.length > 0) {
+                renderResultsAndShowUI(totalResults);
+            } else {
+                alert('Nenhum resultado encontrado para os identificadores fornecidos.');
+            }
+
         } catch (error) {
-            console.error('Erro ao buscar dados:', error);
-            alert('Ocorreu um erro ao comunicar com o servidor.');
+            console.error('Erro durante a busca em lotes:', error);
+            alert('Ocorreu um erro durante a busca. Por favor, tente novamente.');
         } finally {
             showLoading(false);
         }
     });
+
+    // --- FUNÇÕES DE CONTROLO DA BARRA DE PROGRESSO E UI ---
+    function showLoading(show) {
+        if (show) {
+            document.body.classList.add('loading-active');
+            searchButton.disabled = true;
+        } else {
+            document.body.classList.remove('loading-active');
+            searchButton.disabled = false;
+        }
+    }
+
+    function resetProgressBar() {
+        if (!progressTitle || !progressBarFill || !progressAsteroid) return;
+        progressTitle.textContent = 'Preparando a busca...';
+        progressBarFill.style.width = '0%';
+        progressAsteroid.style.left = '0%';
+        progressBarFill.setAttribute('aria-valuenow', 0);
+    }
+
+    function updateProgressText(text) {
+        if(progressTitle) progressTitle.textContent = text;
+    }
+
+    function updateProgressBar(percentage) {
+        if(progressBarFill && progressAsteroid) {
+            progressBarFill.style.width = `${percentage}%`;
+            progressAsteroid.style.left = `${percentage}%`;
+            progressBarFill.setAttribute('aria-valuenow', percentage);
+        }
+    }
+
+    function renderResultsAndShowUI(results) {
+        currentSearchResults = results;
+        renderResults(results);
+        showSearch(false);
+        
+        const alertsToShow = [];
+        if (saveResultsAlert && localStorage.getItem('alert-dismissed-save-results-alert') !== 'true') {
+            saveResultsAlert.style.display = 'flex';
+            alertsToShow.push(saveResultsAlert);
+        }
+        if (customizeViewAlert && localStorage.getItem('alert-dismissed-customize-view-alert') !== 'true') {
+            customizeViewAlert.style.display = 'flex';
+            alertsToShow.push(customizeViewAlert);
+        }
+        if (alertsToShow.length > 0) {
+            lockContent([resultsCard]);
+        }
+    }
 
     function renderResults(results) {
         document.getElementById('results-count').textContent = `${results.length} encontrado(s)`;
@@ -165,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = name;
             tableSelect.appendChild(option);
         });
-        const headers = appState.column_order.filter(col => col in results[0]);
+        const headers = results.length > 0 ? appState.column_order.filter(col => col in results[0]) : [];
         resultsThead.innerHTML = `<tr><th class="selection-col d-none"><i class="fas fa-check"></i></th>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
         resultsTbody.innerHTML = '';
         results.forEach(row => {
@@ -193,83 +175,86 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     newSearchBtn.addEventListener('click', () => showSearch(true));
     
-    function showLoading(show, message = '') {
-        if (show) {
-            loadingOverlay.style.display = 'flex';
-            document.getElementById('progress-title').textContent = message;
-            searchButton.disabled = true;
-            searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
-        } else {
-            loadingOverlay.style.display = 'none';
-            searchButton.disabled = false;
-            searchButton.innerHTML = '<i class="fas fa-search me-2"></i> Buscar';
+    // --- LÓGICA DAS DICAS DINÂMICAS E TOUR ---
+    searchInput.addEventListener('focus', function() {
+        if (localStorage.getItem('multiSearchTipShown') === 'true') return;
+        const tipContent = 'Você pode pesquisar vários objetos de uma vez! Basta colar os códigos na caixa de texto, garantindo que cada um fique em uma linha separada.';
+        showDynamicPopover(searchInput, 'Busca em Lote', tipContent, {
+            placement: 'top',
+            timeout: 10000,
+            showCloseButton: true
+        });
+        localStorage.setItem('multiSearchTipShown', 'true');
+    }, { once: true });
+
+    if (saveResultsAlert) {
+        saveResultsAlert.addEventListener('close.bs.alert', function () {
+            startGuidedTour();
+        });
+    }
+    
+    function startGuidedTour() {
+        if (localStorage.getItem('guidedTourShown') === 'true') {
+            unlockContent();
+            return;
+        }
+        localStorage.setItem('guidedTourShown', 'true');
+        lockContent([resultsCard, mainCard]);
+        showTourStep(1);
+    }
+    
+    function showTourStep(step) {
+        clearAllPopoversAndTimers();
+        if (step === 1) {
+            const tipContent = 'Primeiro, escolha em qual das suas tabelas você quer salvar estes resultados.';
+            showDynamicPopover(tableSelect.parentNode, 'Passo 1 de 2', tipContent, {
+                tourStep: { current: 1, total: 2 },
+                showCloseButton: false
+            });
+            const timeoutId = setTimeout(() => advanceTour(1), 10000);
+            tourTimeouts.push(timeoutId);
+        } else if (step === 2) {
+            const tipContent = 'Agora, salve tudo de uma vez ou clique para selecionar linhas específicas.';
+            showDynamicPopover(initialSaveButtons, 'Passo 2 de 2', tipContent, {
+                tourStep: { current: 2, total: 2 },
+                showCloseButton: false
+            });
+            const timeoutId = setTimeout(() => finishTour(), 10000);
+            tourTimeouts.push(timeoutId);
         }
     }
 
-    saveAllBtn.addEventListener('click', function() {
-        addRowsToTable(tableSelect.value, currentSearchResults);
-        alert(`${currentSearchResults.length} resultado(s) salvo(s) com sucesso em '${tableSelect.value}'.`);
-    });
-
-    saveSelectedBtn.addEventListener('click', function() {
-        const selectedRows = getSelectedRows();
-        addRowsToTable(tableSelect.value, selectedRows);
-        alert(`${selectedRows.length} resultado(s) salvo(s) com sucesso em '${tableSelect.value}'.`);
-        exitSelectMode();
-    });
-
-    function addRowsToTable(tableName, rowsToAdd) {
-        if (!appState.saved_tables[tableName]) return;
-        const existingObjects = new Set(appState.saved_tables[tableName].map(r => r.Objeto));
-        rowsToAdd.forEach(newRow => {
-            if (!existingObjects.has(newRow.Objeto)) {
-                appState.saved_tables[tableName].push(newRow);
-            }
-        });
-        saveStateToLocalStorage();
+    window.advanceTour = (currentStep) => {
+        clearAllPopoversAndTimers();
+        if (currentStep < 2) {
+            showTourStep(currentStep + 1);
+        } else {
+            finishTour();
+        }
+    }
+    
+    function finishTour() {
+        clearAllPopoversAndTimers();
+        unlockContent();
     }
 
+    function clearAllPopoversAndTimers() {
+        tourTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        tourTimeouts = [];
+        activePopovers.forEach(popover => popover.dispose());
+        activePopovers = [];
+        document.querySelectorAll('.spotlight').forEach(el => el.classList.remove('spotlight'));
+    }
+
+    // --- LÓGICA DE SALVAR E MODO DE SELEÇÃO ---
+    saveAllBtn.addEventListener('click', function() { addRowsToTable(tableSelect.value, currentSearchResults); alert(`${currentSearchResults.length} resultado(s) salvo(s) com sucesso em '${tableSelect.value}'.`); });
+    saveSelectedBtn.addEventListener('click', function() { const selectedRows = getSelectedRows(); addRowsToTable(tableSelect.value, selectedRows); alert(`${selectedRows.length} resultado(s) salvo(s) com sucesso em '${tableSelect.value}'.`); exitSelectMode(); });
+    function addRowsToTable(tableName, rowsToAdd) { if (!appState.saved_tables[tableName]) return; const existingObjects = new Set(appState.saved_tables[tableName].map(r => r.Objeto)); rowsToAdd.forEach(newRow => { if (!existingObjects.has(newRow.Objeto)) { appState.saved_tables[tableName].push(newRow); } }); saveStateToLocalStorage(); }
     enableSelectModeBtn.addEventListener('click', enterSelectMode);
     cancelSelectModeBtn.addEventListener('click', exitSelectMode);
-    
-    resultsTbody.addEventListener('click', (e) => {
-        if (resultsTbody.classList.contains('selection-mode')) {
-            const row = e.target.closest('tr');
-            if (!row) return;
-            const checkbox = row.querySelector('.row-checkbox');
-            if (e.target.tagName !== 'INPUT') checkbox.checked = !checkbox.checked;
-            updateSelectionState();
-        }
-    });
-
-    function enterSelectMode() {
-        initialSaveButtons.classList.add('d-none');
-        document.getElementById('selection-controls').classList.remove('d-none');
-        document.getElementById('selection-instruction').classList.remove('d-none');
-        resultsTbody.classList.add('selection-mode');
-        document.querySelectorAll('.selection-col').forEach(c => c.classList.remove('d-none'));
-    }
-
-    function exitSelectMode() {
-        initialSaveButtons.classList.remove('d-none');
-        document.getElementById('selection-controls').classList.add('d-none');
-        document.getElementById('selection-instruction').classList.add('d-none');
-        resultsTbody.classList.remove('selection-mode');
-        document.querySelectorAll('.selection-col').forEach(c => c.classList.add('d-none'));
-        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
-        document.getElementById('save-selected-btn').disabled = true;
-    }
-
-    function updateSelectionState() {
-        const selectedCount = getSelectedRows().length;
-        document.getElementById('save-selected-btn').disabled = selectedCount === 0;
-    }
-
-    function getSelectedRows() {
-        const selectedObjects = new Set();
-        document.querySelectorAll('.row-checkbox:checked').forEach(cb => {
-            selectedObjects.add(cb.closest('tr').dataset.objectName);
-        });
-        return currentSearchResults.filter(row => selectedObjects.has(row.Objeto));
-    }
+    resultsTbody.addEventListener('click', (e) => { if (resultsTbody.classList.contains('selection-mode')) { const row = e.target.closest('tr'); if (!row) return; const checkbox = row.querySelector('.row-checkbox'); if (e.target.tagName !== 'INPUT') checkbox.checked = !checkbox.checked; updateSelectionState(); } });
+    function enterSelectMode() { initialSaveButtons.classList.add('d-none'); document.getElementById('selection-controls').classList.remove('d-none'); document.getElementById('selection-instruction').classList.remove('d-none'); resultsTbody.classList.add('selection-mode'); document.querySelectorAll('.selection-col').forEach(c => c.classList.remove('d-none')); }
+    function exitSelectMode() { initialSaveButtons.classList.remove('d-none'); document.getElementById('selection-controls').classList.add('d-none'); document.getElementById('selection-instruction').classList.add('d-none'); resultsTbody.classList.remove('selection-mode'); document.querySelectorAll('.selection-col').forEach(c => c.classList.add('d-none')); document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false); document.getElementById('save-selected-btn').disabled = true; }
+    function updateSelectionState() { const selectedCount = getSelectedRows().length; document.getElementById('save-selected-btn').disabled = selectedCount === 0; }
+    function getSelectedRows() { const selectedObjects = new Set(); document.querySelectorAll('.row-checkbox:checked').forEach(cb => { selectedObjects.add(cb.closest('tr').dataset.objectName); }); return currentSearchResults.filter(row => selectedObjects.has(row.Objeto)); }
 });

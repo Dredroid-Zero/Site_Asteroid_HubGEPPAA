@@ -1,25 +1,131 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Referências aos elementos da página
+    // --- REFERÊNCIAS AOS ELEMENTOS ---
+    // Elementos da Página
     const tableSelect = document.getElementById('active_table_select');
     const tableBody = document.getElementById('table-body-sortable');
     const tableHeadRow = document.getElementById('table-head-row');
     const emptyMessage = document.getElementById('empty-table-message');
     const activeTableNameDisplays = document.querySelectorAll('.dynamic-active-table-name');
     const managementPanel = document.getElementById('management-panel');
-    const loadingOverlay = document.getElementById('loading-overlay');
     const reanalyzeForm = document.getElementById('reanalyze-form');
     const downloadCsvBtn = document.getElementById('download-csv-btn');
     
-    // Controles de modo
+    // Elementos da Tela de Carregamento (Globais)
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressAsteroid = document.getElementById('progress-asteroid');
+    const progressTitle = document.getElementById('progress-title');
+    
+    // Controles de Modo
     const reorderControls = document.getElementById('reorder-controls');
     const deleteControls = document.getElementById('delete-controls');
 
-    // Instâncias dos modais
+    // Instâncias dos Modais
     const createModal = new bootstrap.Modal(document.getElementById('createTableModal'));
     const renameModal = new bootstrap.Modal(document.getElementById('renameTableModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteTableModal'));
     let sortable = null;
 
+    // --- LÓGICA DE REANÁLISE COM BARRA DE PROGRESSO ---
+    reanalyzeForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const activeTable = appState.active_table;
+        const tableData = appState.saved_tables[activeTable];
+
+        if (!tableData || tableData.length === 0) {
+            alert('Tabela vazia, nada para reanalisar.');
+            return;
+        }
+        if (!confirm(`Isso buscará novamente os dados de todos os ${tableData.length} objetos nesta tabela. Pode demorar um pouco. Deseja continuar?`)) {
+            return;
+        }
+
+        const identifiers = tableData.map(row => row.Objeto);
+        const CHUNK_SIZE = 25;
+        const chunks = [];
+        for (let i = 0; i < identifiers.length; i += CHUNK_SIZE) {
+            chunks.push(identifiers.slice(i, i + CHUNK_SIZE));
+        }
+
+        let newTotalResults = [];
+        showLoading(true);
+        resetProgressBar();
+
+        try {
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const chunkNumber = i + 1;
+                
+                updateProgressText(`Reanalisando lote ${chunkNumber} de ${chunks.length}...`);
+                
+                const response = await fetch('/api/run-search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identificadores: chunk.join('\n') })
+                });
+                if (!response.ok) throw new Error(`Erro no lote ${chunkNumber}: ${response.statusText}`);
+
+                const chunkResults = await response.json();
+                if (chunkResults.length > 0) newTotalResults.push(...chunkResults);
+                
+                const progress = (chunkNumber / chunks.length) * 100;
+                updateProgressBar(progress);
+                
+                await new Promise(resolve => setTimeout(resolve, 500)); 
+            }
+
+            updateProgressText('Finalizando...');
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            if (newTotalResults.length > 0) {
+                appState.saved_tables[activeTable] = newTotalResults;
+                saveStateToLocalStorage();
+                alert('Reanálise concluída com sucesso!');
+                renderPage();
+            } else {
+                alert('Nenhum dado novo foi encontrado durante a reanálise.');
+            }
+
+        } catch (error) {
+            console.error('Erro ao reanalisar dados:', error);
+            alert('Ocorreu um erro ao comunicar com o servidor durante a reanálise.');
+        } finally {
+            showLoading(false);
+        }
+    });
+
+    // --- FUNÇÕES DE CONTROLE DA TELA DE CARREGAMENTO ---
+    function showLoading(show) {
+        const reanalyzeButton = reanalyzeForm.querySelector('button');
+        if (show) {
+            document.body.classList.add('loading-active');
+            if(reanalyzeButton) reanalyzeButton.disabled = true;
+        } else {
+            document.body.classList.remove('loading-active');
+            if(reanalyzeButton) reanalyzeButton.disabled = false;
+        }
+    }
+
+    function resetProgressBar() {
+        if (!progressTitle || !progressBarFill || !progressAsteroid) return;
+        progressTitle.textContent = 'Preparando reanálise...';
+        progressBarFill.style.width = '0%';
+        progressAsteroid.style.left = '0%';
+        progressBarFill.setAttribute('aria-valuenow', 0);
+    }
+
+    function updateProgressText(text) {
+        if(progressTitle) progressTitle.textContent = text;
+    }
+
+    function updateProgressBar(percentage) {
+        if(progressBarFill && progressAsteroid) {
+            progressBarFill.style.width = `${percentage}%`;
+            progressAsteroid.style.left = `${percentage}%`;
+            progressBarFill.setAttribute('aria-valuenow', percentage);
+        }
+    }
+
+    // --- RESTANTE DAS FUNÇÕES DA PÁGINA (sem alterações) ---
     function renderPage() {
         tableSelect.innerHTML = '';
         Object.keys(appState.saved_tables).forEach(name => {
@@ -63,21 +169,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const newNameInput = document.getElementById('new_name_create_input');
         const newName = newNameInput.value.trim();
         if (newName && !appState.saved_tables[newName]) {
-            const initialTableCount = Object.keys(appState.saved_tables).length;
             appState.saved_tables[newName] = [];
             appState.active_table = newName;
             saveStateToLocalStorage();
             createModal.hide();
             newNameInput.value = '';
             renderPage();
-            // A dica de gerenciamento quando a *segunda* tabela é criada.
-            if (initialTableCount === 1 && localStorage.getItem('tableManagementTipShown') !== 'true') {
-                 const tipContent = 'Parabéns pela sua nova tabela! Agora você pode alternar facilmente entre seus projetos aqui.';
-                 setTimeout(() => {
-                    showDynamicPopover(tableSelect, 'Múltiplas Tabelas!', tipContent, 10000);
-                 }, 500);
-                 localStorage.setItem('tableManagementTipShown', 'true');
-            }
         } else {
             alert('Nome inválido ou já existente.');
         }
@@ -145,53 +242,6 @@ document.addEventListener('DOMContentLoaded', function() {
         link.click();
         document.body.removeChild(link);
     });
-
-    reanalyzeForm.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        const activeTable = appState.active_table;
-        const tableData = appState.saved_tables[activeTable];
-        if (!tableData || tableData.length === 0) {
-            alert('Tabela vazia, nada para reanalisar.');
-            return;
-        }
-        if (!confirm(`Isso buscará novamente os dados de todos os ${tableData.length} objetos nesta tabela. Pode demorar um pouco. Deseja continuar?`)) {
-            return;
-        }
-        showLoading(true, 'Reanalisando dados...');
-        const identifiers = tableData.map(row => row.Objeto).join('\n');
-        try {
-            const response = await fetch('/api/run-search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identificadores: identifiers })
-            });
-            if (!response.ok) throw new Error('A resposta do servidor não foi OK.');
-            const newResults = await response.json();
-            if (newResults && newResults.length > 0) {
-                appState.saved_tables[activeTable] = newResults;
-                saveStateToLocalStorage();
-                alert('Reanálise concluída com sucesso!');
-                renderPage();
-            } else {
-                alert('Nenhum dado novo foi encontrado durante a reanálise.');
-            }
-        } catch (error) {
-            console.error('Erro ao reanalisar dados:', error);
-            alert('Ocorreu um erro ao comunicar com o servidor durante a reanálise.');
-        } finally {
-            showLoading(false);
-        }
-    });
-
-    function showLoading(show, message = '') {
-        const title = document.getElementById('progress-title');
-        if (show) {
-            if(title) title.textContent = message;
-            loadingOverlay.style.display = 'flex';
-        } else {
-            loadingOverlay.style.display = 'none';
-        }
-    }
     
     document.getElementById('enable-delete-mode').addEventListener('click', () => enterMode('delete'));
     document.getElementById('reorder-rows-btn').addEventListener('click', () => enterMode('reorder'));
@@ -258,31 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
         exitAllModes();
         renderPage();
     }
-
-    // --- NOVAS DICAS DINÂMICAS ---
-    const manageTablesAlert = document.getElementById('manage-tables-alert');
-    if(manageTablesAlert) {
-        manageTablesAlert.addEventListener('close.bs.alert', function () {
-            startTablesPageTour();
-        });
-    }
-
-    function startTablesPageTour() {
-        if (localStorage.getItem('tablesPageTourShown') === 'true') {
-            return;
-        }
-        localStorage.setItem('tablesPageTourShown', 'true');
-
-        setTimeout(() => {
-            const tipContent = 'Use este botão para buscar novamente os dados de todos os objetos da tabela, atualizando-os com as informações mais recentes.';
-            showDynamicPopover(reanalyzeForm, 'Atualizar Dados', tipContent);
-        }, 500);
-
-        setTimeout(() => {
-            const tipContent = 'Exporte todos os dados desta tabela para um arquivo CSV, compatível com Excel e outras planilhas.';
-            showDynamicPopover(downloadCsvBtn, 'Baixar Tabela', tipContent);
-        }, 8000);
-    }
-
+    
     renderPage();
 });
