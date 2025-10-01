@@ -108,8 +108,20 @@
     </div></div>
 </div>
 
-<div class="loading-overlay" id="loading-overlay" style="display: none;">
-    <div class="progress-container"><h4 class="progress-title" id="progress-title">Processando...</h4></div>
+<div class="modal fade" id="reanalyzeReportModal" tabindex="-1" aria-labelledby="reanalyzeReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reanalyzeReportModalLabel"><i class="fas fa-tasks me-2"></i>Relatório de Reanálise</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="reanalyzeReportBody">
+                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock %}

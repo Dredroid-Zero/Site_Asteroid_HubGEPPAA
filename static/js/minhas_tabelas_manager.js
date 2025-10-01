@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
     // --- REFERÊNCIAS AOS ELEMENTOS ---
-    // Elementos da Página
     const tableSelect = document.getElementById('active_table_select');
     const tableBody = document.getElementById('table-body-sortable');
     const tableHeadRow = document.getElementById('table-head-row');
@@ -9,23 +8,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const managementPanel = document.getElementById('management-panel');
     const reanalyzeForm = document.getElementById('reanalyze-form');
     const downloadCsvBtn = document.getElementById('download-csv-btn');
-    
-    // Elementos da Tela de Carregamento (Globais)
     const progressBarFill = document.getElementById('progress-bar-fill');
     const progressAsteroid = document.getElementById('progress-asteroid');
     const progressTitle = document.getElementById('progress-title');
-    
-    // Controles de Modo
     const reorderControls = document.getElementById('reorder-controls');
     const deleteControls = document.getElementById('delete-controls');
-
-    // Instâncias dos Modais
+    
+    // Modais
     const createModal = new bootstrap.Modal(document.getElementById('createTableModal'));
     const renameModal = new bootstrap.Modal(document.getElementById('renameTableModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteTableModal'));
+    const reanalyzeReportModal = new bootstrap.Modal(document.getElementById('reanalyzeReportModal'));
     let sortable = null;
 
-    // --- LÓGICA DE REANÁLISE COM BARRA DE PROGRESSO ---
+    // --- LÓGICA DE REANÁLISE COM RELATÓRIO E DESTAQUE ---
     reanalyzeForm.addEventListener('submit', async function(event) {
         event.preventDefault();
         const activeTable = appState.active_table;
@@ -35,11 +31,13 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Tabela vazia, nada para reanalisar.');
             return;
         }
-        if (!confirm(`Isso buscará novamente os dados de todos os ${tableData.length} objetos nesta tabela. Pode demorar um pouco. Deseja continuar?`)) {
+        if (!confirm(`Isso buscará novamente os dados de todos os ${tableData.length} objetos nesta tabela e destacará as mudanças. Deseja continuar?`)) {
             return;
         }
 
+        const oldDataMap = new Map(tableData.map(row => [row.Objeto, { ...row }]));
         const identifiers = tableData.map(row => row.Objeto);
+        
         const CHUNK_SIZE = 25;
         const chunks = [];
         for (let i = 0; i < identifiers.length; i += CHUNK_SIZE) {
@@ -73,14 +71,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 await new Promise(resolve => setTimeout(resolve, 500)); 
             }
 
-            updateProgressText('Finalizando...');
+            updateProgressText('Comparando dados...');
             await new Promise(resolve => setTimeout(resolve, 600));
+
+            const changes = [];
+            const fieldsToCompare = ['Status do objeto', 'Incerteza', 'Tipo de Órbita', 'Comprimento do Arco (dias)', 'Oposições'];
+
+            newTotalResults.forEach(newRow => {
+                const oldRow = oldDataMap.get(newRow.Objeto);
+                if (oldRow) {
+                    fieldsToCompare.forEach(field => {
+                        const oldValue = oldRow[field] !== null && oldRow[field] !== undefined ? oldRow[field] : 'N/A';
+                        const newValue = newRow[field] !== null && newRow[field] !== undefined ? newRow[field] : 'N/A';
+                        
+                        if (String(oldValue) !== String(newValue)) {
+                            changes.push({
+                                objectName: newRow.Objeto,
+                                field: field,
+                                oldValue: oldValue,
+                                newValue: newValue
+                            });
+                        }
+                    });
+                }
+            });
 
             if (newTotalResults.length > 0) {
                 appState.saved_tables[activeTable] = newTotalResults;
                 saveStateToLocalStorage();
-                alert('Reanálise concluída com sucesso!');
                 renderPage();
+                
+                setTimeout(() => {
+                    highlightChanges(changes);
+                    showReanalyzeReport(changes);
+                }, 100);
+
             } else {
                 alert('Nenhum dado novo foi encontrado durante a reanálise.');
             }
@@ -92,40 +117,51 @@ document.addEventListener('DOMContentLoaded', function() {
             showLoading(false);
         }
     });
+    
+    function showReanalyzeReport(changes) {
+        const reportBody = document.getElementById('reanalyzeReportBody');
+        if (!reportBody) return;
 
-    // --- FUNÇÕES DE CONTROLE DA TELA DE CARREGAMENTO ---
-    function showLoading(show) {
-        const reanalyzeButton = reanalyzeForm.querySelector('button');
-        if (show) {
-            document.body.classList.add('loading-active');
-            if(reanalyzeButton) reanalyzeButton.disabled = true;
+        let reportHTML = '<h5>Análise Finalizada!</h5>';
+
+        if (changes.length > 0) {
+            reportHTML += `<p>${changes.length} atualização(ões) encontrada(s):</p><ul class="list-group">`;
+            changes.forEach(change => {
+                reportHTML += `<li class="list-group-item"><strong>${change.objectName}</strong> mudou <em>${change.field}</em> de <span class="badge bg-secondary">${change.oldValue}</span> para <span class="badge bg-info text-dark">${change.newValue}</span>.</li>`;
+            });
+            reportHTML += '</ul>';
         } else {
-            document.body.classList.remove('loading-active');
-            if(reanalyzeButton) reanalyzeButton.disabled = false;
+            reportHTML += '<p class="mt-3">Nenhuma atualização encontrada nos dados dos objetos.</p>';
         }
+
+        reportBody.innerHTML = reportHTML;
+        reanalyzeReportModal.show();
     }
 
-    function resetProgressBar() {
-        if (!progressTitle || !progressBarFill || !progressAsteroid) return;
-        progressTitle.textContent = 'Preparando reanálise...';
-        progressBarFill.style.width = '0%';
-        progressAsteroid.style.left = '0%';
-        progressBarFill.setAttribute('aria-valuenow', 0);
+    function highlightChanges(changes) {
+        const headers = Array.from(tableHeadRow.querySelectorAll('th')).map(th => th.textContent);
+
+        changes.forEach(change => {
+            const colIndex = headers.indexOf(change.field);
+            const cellIndex = colIndex; 
+
+            if (cellIndex !== -1) {
+                const row = tableBody.querySelector(`tr[data-object-name="${change.objectName}"]`);
+                if (row) {
+                    const cell = row.querySelectorAll('td')[cellIndex];
+                    if (cell) {
+                        cell.classList.add('cell-highlighted');
+                    }
+                }
+            }
+        });
     }
 
-    function updateProgressText(text) {
-        if(progressTitle) progressTitle.textContent = text;
-    }
-
-    function updateProgressBar(percentage) {
-        if(progressBarFill && progressAsteroid) {
-            progressBarFill.style.width = `${percentage}%`;
-            progressAsteroid.style.left = `${percentage}%`;
-            progressBarFill.setAttribute('aria-valuenow', percentage);
-        }
-    }
-
-    // --- RESTANTE DAS FUNÇÕES DA PÁGINA (sem alterações) ---
+    function showLoading(show) { const reanalyzeButton = reanalyzeForm.querySelector('button'); if (show) { document.body.classList.add('loading-active'); if(reanalyzeButton) reanalyzeButton.disabled = true; } else { document.body.classList.remove('loading-active'); if(reanalyzeButton) reanalyzeButton.disabled = false; } }
+    function resetProgressBar() { if (!progressTitle || !progressBarFill || !progressAsteroid) return; progressTitle.textContent = 'Preparando reanálise...'; progressBarFill.style.width = '0%'; progressAsteroid.style.left = '0%'; progressBarFill.setAttribute('aria-valuenow', 0); }
+    function updateProgressText(text) { if(progressTitle) progressTitle.textContent = text; }
+    function updateProgressBar(percentage) { if(progressBarFill && progressAsteroid) { progressBarFill.style.width = `${percentage}%`; progressAsteroid.style.left = `${percentage}%`; progressBarFill.setAttribute('aria-valuenow', percentage); } }
+    
     function renderPage() {
         tableSelect.innerHTML = '';
         Object.keys(appState.saved_tables).forEach(name => {
