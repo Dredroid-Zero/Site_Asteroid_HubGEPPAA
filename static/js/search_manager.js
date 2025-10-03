@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // --- FUNÇÃO DE RENDERIZAÇÃO DE RESULTADOS (MODIFICADA) ---
     function renderResults(results) {
         document.getElementById('results-count').textContent = `${results.length} encontrado(s)`;
         tableSelect.innerHTML = '';
@@ -147,13 +148,20 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = name;
             tableSelect.appendChild(option);
         });
+        
         const headers = results.length > 0 ? appState.column_order.filter(col => col in results[0]) : [];
-        resultsThead.innerHTML = `<tr><th class="selection-col d-none"><i class="fas fa-check"></i></th>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+        
+        // Adiciona o cabeçalho da coluna N°
+        resultsThead.innerHTML = `<tr><th class="selection-col d-none"><i class="fas fa-check"></i></th><th>N°</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+        
         resultsTbody.innerHTML = '';
-        results.forEach(row => {
+        results.forEach((row, index) => {
             const tr = document.createElement('tr');
             tr.dataset.objectName = row['Objeto'];
-            let rowHTML = `<td class="selection-col d-none"><input class="form-check-input row-checkbox" type="checkbox"></td>`;
+            
+            // Adiciona a célula com o número da linha
+            let rowHTML = `<td class="selection-col d-none"><input class="form-check-input row-checkbox" type="checkbox"></td><td>${index + 1}</td>`;
+            
             headers.forEach(header => { rowHTML += `<td>${row[header] || '-'}</td>`; });
             tr.innerHTML = rowHTML;
             resultsTbody.appendChild(tr);
@@ -176,6 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
     newSearchBtn.addEventListener('click', () => showSearch(true));
     
     // --- LÓGICA DAS DICAS DINÂMICAS E TOUR ---
+    let tourTimeouts = [];
     searchInput.addEventListener('focus', function() {
         if (localStorage.getItem('multiSearchTipShown') === 'true') return;
         const tipContent = 'Você pode pesquisar vários objetos de uma vez! Basta colar os códigos na caixa de texto, garantindo que cada um fique em uma linha separada.';

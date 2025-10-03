@@ -139,16 +139,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function highlightChanges(changes) {
+        // Obter os cabeçalhos visíveis a partir do DOM, já que eles refletem a ordem atual
         const headers = Array.from(tableHeadRow.querySelectorAll('th')).map(th => th.textContent);
-
+    
         changes.forEach(change => {
             const colIndex = headers.indexOf(change.field);
-            const cellIndex = colIndex; 
-
-            if (cellIndex !== -1) {
+    
+            // Se a coluna da mudança estiver visível
+            if (colIndex !== -1) {
                 const row = tableBody.querySelector(`tr[data-object-name="${change.objectName}"]`);
                 if (row) {
-                    const cell = row.querySelectorAll('td')[cellIndex];
+                    // O índice da célula (td) corresponde ao índice do cabeçalho (th)
+                    const cell = row.querySelectorAll('td')[colIndex];
                     if (cell) {
                         cell.classList.add('cell-highlighted');
                     }
@@ -156,11 +158,37 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    function showLoading(show) { 
+        const reanalyzeButton = reanalyzeForm.querySelector('button'); 
+        if (show) { 
+            document.body.classList.add('loading-active'); 
+            if(reanalyzeButton) reanalyzeButton.disabled = true; 
+        } else { 
+            document.body.classList.remove('loading-active'); 
+            if(reanalyzeButton) reanalyzeButton.disabled = false; 
+        } 
+    }
 
-    function showLoading(show) { const reanalyzeButton = reanalyzeForm.querySelector('button'); if (show) { document.body.classList.add('loading-active'); if(reanalyzeButton) reanalyzeButton.disabled = true; } else { document.body.classList.remove('loading-active'); if(reanalyzeButton) reanalyzeButton.disabled = false; } }
-    function resetProgressBar() { if (!progressTitle || !progressBarFill || !progressAsteroid) return; progressTitle.textContent = 'Preparando reanálise...'; progressBarFill.style.width = '0%'; progressAsteroid.style.left = '0%'; progressBarFill.setAttribute('aria-valuenow', 0); }
-    function updateProgressText(text) { if(progressTitle) progressTitle.textContent = text; }
-    function updateProgressBar(percentage) { if(progressBarFill && progressAsteroid) { progressBarFill.style.width = `${percentage}%`; progressAsteroid.style.left = `${percentage}%`; progressBarFill.setAttribute('aria-valuenow', percentage); } }
+    function resetProgressBar() { 
+        if (!progressTitle || !progressBarFill || !progressAsteroid) return; 
+        progressTitle.textContent = 'Preparando reanálise...'; 
+        progressBarFill.style.width = '0%'; 
+        progressAsteroid.style.left = '0%'; 
+        progressBarFill.setAttribute('aria-valuenow', 0); 
+    }
+
+    function updateProgressText(text) { 
+        if(progressTitle) progressTitle.textContent = text; 
+    }
+
+    function updateProgressBar(percentage) { 
+        if(progressBarFill && progressAsteroid) { 
+            progressBarFill.style.width = `${percentage}%`; 
+            progressAsteroid.style.left = `${percentage}%`; 
+            progressBarFill.setAttribute('aria-valuenow', percentage); 
+        } 
+    }
     
     function renderPage() {
         tableSelect.innerHTML = '';
@@ -175,16 +203,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const activeTableData = appState.saved_tables[appState.active_table] || [];
         tableBody.innerHTML = '';
         tableHeadRow.innerHTML = '';
+
         if (activeTableData.length > 0) {
             emptyMessage.classList.add('d-none');
             document.querySelector('.table-responsive').classList.remove('d-none');
             const headers = appState.column_order.filter(col => col in activeTableData[0]);
-            tableHeadRow.innerHTML = '<th class="control-col"></th>';
+            
+            tableHeadRow.innerHTML = '<th class="control-col"></th><th>N°</th>';
             headers.forEach(header => tableHeadRow.innerHTML += `<th>${header}</th>`);
-            activeTableData.forEach(row => {
+
+            activeTableData.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.objectName = row['Objeto'];
-                let rowHTML = '<td class="control-col"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><input class="form-check-input row-checkbox" type="checkbox"></td>';
+                
+                let rowHTML = `<td class="control-col"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><input class="form-check-input row-checkbox" type="checkbox"></td><td>${index + 1}</td>`;
+                
                 headers.forEach(header => rowHTML += `<td>${row[header] || '-'}</td>`);
                 tr.innerHTML = rowHTML;
                 tableBody.appendChild(tr);
@@ -256,18 +289,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const headers = appState.column_order.filter(col => col in data[0]);
-        let csvContent = '\uFEFF' + headers.join(';') + '\n';
-        data.forEach(row => {
-            const values = headers.map(header => {
+        
+        let csvContent = '\uFEFF' + '"N°";' + headers.join(';') + '\n';
+        
+        data.forEach((row, index) => {
+            const rowNumber = index + 1;
+            let rowValues = [rowNumber];
+
+            headers.forEach(header => {
                 let cell = row[header] ? String(row[header]) : '';
                 cell = cell.replace(/"/g, '""');
                 if (cell.includes(';') || cell.includes('"') || cell.includes('\n')) {
                     cell = `"${cell}"`;
                 }
-                return cell;
+                rowValues.push(cell);
             });
-            csvContent += values.join(';') + '\n';
+            csvContent += rowValues.join(';') + '\n';
         });
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
