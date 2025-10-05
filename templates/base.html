@@ -31,10 +31,13 @@
                         <a class="nav-link {% if request.endpoint == 'minhas_tabelas' %}active{% endif %}" href="{{ url_for('minhas_tabelas') }}">Minhas Tabelas</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'deteccoes_mcti' %}active{% endif %}" href="{{ url_for('deteccoes_mcti') }}">Detecções MCTI</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'configuracoes' %}active{% endif %}" href="{{ url_for('configuracoes') }}">Configurações</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'deteccoes_mcti' %}active{% endif %}" href="{{ url_for('deteccoes_mcti') }}">Detecções MCTI</a>
+                        <a class="nav-link {% if request.endpoint == 'faq' %}active{% endif %}" href="{{ url_for('faq') }}">FAQ</a>
                     </li>
                 </ul>
             </div>

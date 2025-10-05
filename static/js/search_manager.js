@@ -3,7 +3,66 @@ window.advanceTour = (currentStep) => {
     console.error("Função advanceTour principal ainda não foi carregada.");
 };
 
+// ----- FUNÇÕES DE GESTÃO DO ESTADO DO GLOSSÁRIO -----
+function getGlossaryState() {
+    const state = localStorage.getItem('glossaryHelpState');
+    return state ? JSON.parse(state) : {};
+}
+
+function saveGlossaryState(state) {
+    localStorage.setItem('glossaryHelpState', JSON.stringify(state));
+}
+
+// ----- FUNÇÃO GLOBAL PARA GERIR CONTAGEM DE 1 CLIQUE -----
+window.closeAndHidePopover = function(closeButton) {
+    const popoverEl = closeButton.closest('.popover');
+    if (!popoverEl) return;
+    const triggerEl = document.querySelector(`[aria-describedby="${popoverEl.id}"]`);
+    if (!triggerEl) return;
+
+    const columnName = triggerEl.getAttribute('data-bs-title');
+
+    const popoverInstance = bootstrap.Popover.getInstance(triggerEl);
+    if (popoverInstance) {
+        popoverInstance.hide();
+    }
+
+    const glossaryState = getGlossaryState();
+    glossaryState[columnName] = (glossaryState[columnName] || 0) + 1;
+    saveGlossaryState(glossaryState);
+
+    // LÓGICA ALTERADA PARA 1 CLIQUE
+    if (glossaryState[columnName] >= 1) {
+        triggerEl.style.visibility = 'hidden';
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
+    // --- DICIONÁRIO DE DADOS PARA O GLOSSÁRIO (COM LINKS PARA /FAQ) ---
+    const GLOSSARY_DATA = {
+        'Objeto': { summary: 'O código de identificação preliminar que você usou na busca.', link: '/faq#headingObjeto' },
+        'Status do objeto': { summary: 'Indica se o objeto é “Numerado”, “Provisório” e se foi detectado de forma fraca (Faint Detection).', link: '/faq#headingStatus' },
+        '(*?)': { summary: 'Marca a observação específica que levou o MPC a gerar uma nova designação.', link: '/faq#headingAsterisco' },
+        'Designação IAU': { summary: 'A “matrícula” provisória ou permanente do objeto atribuída pela IAU.', link: '/faq#headingDesignacaoIAU' },
+        'Tipo de Órbita': { summary: 'A “vizinhança” no Sistema Solar em que o objeto orbita.', link: '/faq#headingTipoOrbita' },
+        'Nome Completo': { summary: 'O “nome de batismo” oficial do objeto, se ele tiver um.', link: '/faq#headingNomeCompleto' },
+        'Descrição': { summary: 'O “certificado de nascimento” do objeto, com detalhes da sua descoberta.', link: '/faq#headingDescricao' },
+        'Incerteza': { summary: 'A “nota de confiança” da órbita, numa escala de 0 (muito confiável) a 9 (muito incerta).', link: '/faq#headingIncerteza' },
+        'String da Observação': { summary: 'Um “telegrama técnico” da primeira observação encontrada, com todos os dados essenciais.', link: '/faq#headingStringObservacao' },
+        'Linhas de Observação WAMO': { summary: 'O número total de “fotografias” (observações) conhecidas deste objeto.', link: '/faq#headingLinhasWAMO' },
+        'Status de Consulta': { summary: 'Mostra se os dados exibidos já foram oficialmente publicados pelo MPC.', link: '/faq#headingStatusConsulta' },
+        'Magnitude Absoluta': { summary: 'Uma medida do brilho e do tamanho do asteroide. Números menores indicam objetos maiores.', link: '/faq#headingMagAbsoluta' },
+        'Referência': { summary: 'O código do “documento oficial” (publicação do MPC) onde a órbita foi anunciada.', link: '/faq#headingReferencia' },
+        'Observações Utilizadas': { summary: 'O número de observações realmente usadas para calcular a órbita.', link: '/faq#headingObsUtilizadas' },
+        'Oposições': { summary: 'O número de vezes que o asteroide foi observado durante suas “passagens ideais” anuais.', link: '/faq#headingOposicoes' },
+        'Comprimento do Arco (dias)': { summary: 'O tempo, em dias, entre a primeira e a última observação usadas no cálculo da órbita.', link: '/faq#headingComprimentoArco' },
+        'Primeira Oposição Usada': { summary: 'Os anos da primeira e da última oposição usadas neste cálculo.', link: '/faq#headingPrimeiraOposicao' },
+        'Última Oposição Usada': { summary: 'Os anos da primeira e da última oposição usadas neste cálculo.', link: '/faq#headingUltimaOposicao' },
+        'Primeira Data de Obs. Usada': { summary: 'As datas exatas da primeira e da última observação usadas no cálculo da órbita.', link: '/faq#headingPrimeiraData' },
+        'Última Data de Obs. Usada': { summary: 'As datas exatas da primeira e da última observação usadas no cálculo da órbita.', link: '/faq#headingUltimaData' }
+    };
+
     // --- SELETORES DE ELEMENTOS ---
     const searchSection = document.getElementById('search-section');
     const resultsSection = document.getElementById('results-section');
@@ -138,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- FUNÇÃO DE RENDERIZAÇÃO DE RESULTADOS (MODIFICADA) ---
+    // ----- FUNÇÃO DE RENDERIZAÇÃO DE RESULTADOS (COM MEMÓRIA PERSISTENTE E LÓGICA DE 1 CLIQUE) -----
     function renderResults(results) {
         document.getElementById('results-count').textContent = `${results.length} encontrado(s)`;
         tableSelect.innerHTML = '';
@@ -149,22 +208,64 @@ document.addEventListener('DOMContentLoaded', function() {
             tableSelect.appendChild(option);
         });
         
-        const headers = results.length > 0 ? appState.column_order.filter(col => col in results[0]) : [];
+        const glossaryState = getGlossaryState(); 
+        const headers = appState.column_order;
         
-        // Adiciona o cabeçalho da coluna N°
-        resultsThead.innerHTML = `<tr><th class="selection-col d-none"><i class="fas fa-check"></i></th><th>N°</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+        const headerHtml = headers.map(header => {
+            if (glossaryState[header] >= 1) {
+                return `<th>${header}</th>`; 
+            }
+
+            const glossaryEntry = GLOSSARY_DATA[header];
+            if (glossaryEntry) {
+                const popoverContent = `
+                    <div class="glossary-popover">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <p class="me-2 mb-0">${glossaryEntry.summary}</p>
+                            <button type="button" class="btn-close btn-close-white flex-shrink-0" onclick="window.closeAndHidePopover(this)"></button>
+                        </div>
+                        <a href="${glossaryEntry.link}" target="_blank" class="btn btn-sm btn-outline-light mt-2 d-block">Saiba Mais</a>
+                    </div>
+                `;
+                return `
+                    <th>
+                        ${header}
+                        <button type="button" 
+                                class="btn btn-link btn-sm p-0 ms-1 help-icon" 
+                                data-bs-toggle="popover" 
+                                data-bs-trigger="focus"
+                                tabindex="0"
+                                data-bs-html="true"
+                                data-bs-title="${header}"
+                                data-bs-content='${popoverContent.replace(/'/g, "&apos;")}'>
+                            <i class="far fa-question-circle"></i>
+                        </button>
+                    </th>
+                `;
+            }
+            return `<th>${header}</th>`;
+        }).join('');
+
+        resultsThead.innerHTML = `<tr><th class="selection-col d-none"><i class="fas fa-check"></i></th><th>N°</th>${headerHtml}</tr>`;
         
         resultsTbody.innerHTML = '';
         results.forEach((row, index) => {
             const tr = document.createElement('tr');
             tr.dataset.objectName = row['Objeto'];
-            
-            // Adiciona a célula com o número da linha
             let rowHTML = `<td class="selection-col d-none"><input class="form-check-input row-checkbox" type="checkbox"></td><td>${index + 1}</td>`;
-            
-            headers.forEach(header => { rowHTML += `<td>${row[header] || '-'}</td>`; });
+            headers.forEach(header => {
+                rowHTML += `<td>${row[header] || '-'}</td>`;
+            });
             tr.innerHTML = rowHTML;
             resultsTbody.appendChild(tr);
+        });
+
+        const popoverTriggerList = [].slice.call(resultsThead.querySelectorAll('[data-bs-toggle="popover"]'));
+        popoverTriggerList.map(function (popoverTriggerEl) {
+          return new bootstrap.Popover(popoverTriggerEl, {
+            html: true,
+            sanitize: false
+          });
         });
     }
 

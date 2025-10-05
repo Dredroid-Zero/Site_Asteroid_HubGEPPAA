@@ -7,27 +7,66 @@ import aiohttp
 
 # --- Constantes ---
 ALL_COLUMNS = [
-    'Objeto', 'Status do objeto', 'Designação IAU', 'String da Observação', '(*?)',
+    'Objeto', 'Nome Completo', 'Status do objeto', 'Designação IAU', 'String da Observação', '(*?)',
     'Linhas de Observação WAMO', 'Status de Consulta', 'Tipo de Órbita',
     'Magnitude Absoluta', 'Incerteza', 'Referência', 'Observações Utilizadas',
     'Oposições', 'Comprimento do Arco (dias)', 'Primeira Oposição Usada',
     'Última Oposição Usada', 'Primeira Data de Obs. Usada',
     'Última Data de Obs. Usada', 'Descrição'
 ]
-
-# PADRÃO DE COLUNAS (lista para ordem estável)
 DEFAULT_COLUMNS = [
-    'Objeto',
-    'Status do objeto',
-    '(*?)',
-    'Designação IAU',
-    'Tipo de Órbita',
-    'Incerteza',
-    'Descrição'
+    'Objeto', 'Nome Completo', 'Status do objeto', '(*?)', 'Designação IAU', 
+    'Tipo de Órbita', 'Incerteza', 'Descrição'
 ]
 
 
-# --- Funções de Lógica ---
+# --- NOVAS FUNÇÕES: API DA NASA/JPL ---
+
+async def fetch_jpl_name(session, designation):
+    """Busca o nome completo de um objeto na API do JPL SBDB."""
+    if not designation or designation == 'Não Encontrado' or designation == "-":
+        return designation 
+    
+    api_url = f"https://ssd-api.jpl.nasa.gov/sbdb.api?sstr={designation}"
+    try:
+        async with session.get(api_url, timeout=20, ssl=False) as response:
+            if response.status == 200:
+                data = await response.json()
+                if "object" in data:
+                    return data['object'].get('fullname', designation).strip()
+    except Exception as e:
+        print(f"Erro ao buscar nome no JPL para {designation}: {e}")
+    
+    return designation
+
+async def fetch_all_jpl_names_async(designations):
+    """Busca os nomes para uma lista de designações em 'mini-lotes' para estabilidade."""
+    all_names_map = {}
+    JPL_CHUNK_SIZE = 10
+
+    async with aiohttp.ClientSession() as session:
+        for i in range(0, len(designations), JPL_CHUNK_SIZE):
+            chunk = designations[i:i + JPL_CHUNK_SIZE]
+            print(f"Buscando lote de nomes JPL: {i+1} a {i+len(chunk)} de {len(designations)}")
+            
+            tasks = [fetch_jpl_name(session, desig) for desig in chunk]
+            
+            try:
+                results = await asyncio.gather(*tasks)
+                chunk_map = dict(zip(chunk, results))
+                all_names_map.update(chunk_map)
+            except Exception as e:
+                print(f"Erro ao processar um mini-lote do JPL: {e}")
+                for desig in chunk:
+                    all_names_map[desig] = desig
+            
+            await asyncio.sleep(0.5)
+
+    return all_names_map
+
+
+# --- Funções de Lógica (VERSÃO ANTIGA E FUNCIONAL DO SCRAPER) ---
+
 def extract_orbital_data_from_html(html_content: str):
     soup = BeautifulSoup(html_content, 'html.parser')
     data = {}
@@ -116,6 +155,7 @@ async def fetch_all_orbital_data_async(iau_desigs):
                 results[desig] = html
     return results
 
+# --- FUNÇÃO PRINCIPAL MODIFICADA PARA INCLUIR A BUSCA DE NOMES ---
 def run_full_search_logic(prelim_list):
     all_combined_data = []
     CHUNK_SIZE = 25
@@ -124,18 +164,11 @@ def run_full_search_logic(prelim_list):
         final_search_list, prelim_to_final_map = [], {}
         for code in chunk:
             if code.startswith('P1'):
-                final_id = f"{code} F51"
-                final_search_list.append(final_id)
-                prelim_to_final_map[final_id] = code
+                final_id = f"{code} F51"; final_search_list.append(final_id); prelim_to_final_map[final_id] = code
             elif code.startswith('P2'):
-                final_id = f"{code} F52"
-                final_search_list.append(final_id)
-                prelim_to_final_map[final_id] = code
+                final_id = f"{code} F52"; final_search_list.append(final_id); prelim_to_final_map[final_id] = code
             else:
-                final_id_f51, final_id_f52 = f"{code} F51", f"{code} F52"
-                final_search_list.extend([final_id_f51, final_id_f52])
-                prelim_to_final_map[final_id_f51] = code
-                prelim_to_final_map[final_id_f52] = code
+                final_id_f51, final_id_f52 = f"{code} F51", f"{code} F52"; final_search_list.extend([final_id_f51, final_id_f52]); prelim_to_final_map[final_id_f51] = code; prelim_to_final_map[final_id_f52] = code
         try:
             response = requests.get("https://data.minorplanetcenter.net/api/wamo", json=final_search_list)
             response.raise_for_status()
@@ -152,8 +185,6 @@ def run_full_search_logic(prelim_list):
                 decoded_status = str(selected_obs.get('status_decoded', '')).lower()
                 if 'published' in decoded_status:
                     status_consulta = 'Publicado'
-                elif 'candidate for duplicate' in decoded_status:
-                    status_consulta = 'Quase Duplicado'
                 else:
                     status_consulta = "N/A"
                 wamo_info = {
@@ -168,16 +199,17 @@ def run_full_search_logic(prelim_list):
     if not all_combined_data:
         return None
 
-    iau_desigs_to_fetch = [item['Designação IAU'] for item in all_combined_data]
+    iau_desigs_to_fetch = list(set([item['Designação IAU'] for item in all_combined_data if item.get('Designação IAU')]))
     orbital_data_htmls = {}
     try:
         orbital_data_htmls = asyncio.run(fetch_all_orbital_data_async(iau_desigs_to_fetch))
     except RuntimeError:
-        # Ambiente com loop já em execução (ex: alguns servidores ASGI). Faz fallback para novo loop.
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            orbital_data_htmls = loop.run_until_complete(fetch_all_orbital_data_async(iau_desigs_to_fetch))
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                 orbital_data_htmls = loop.run_until_complete(fetch_all_orbital_data_async(iau_desigs_to_fetch))
+            else:
+                 orbital_data_htmls = asyncio.run(fetch_all_orbital_data_async(iau_desigs_to_fetch))
         except Exception as e:
             print(f"Erro no fallback assíncrono: {e}")
             orbital_data_htmls = {}
@@ -191,6 +223,25 @@ def run_full_search_logic(prelim_list):
         if html_content:
             orbital_info = extract_orbital_data_from_html(html_content)
             item.update(orbital_info)
+
+    # ----- NOVA ETAPA ADICIONADA AQUI -----
+    print("Buscando nomes completos na API da NASA/JPL...")
+    jpl_names_map = {}
+    if iau_desigs_to_fetch:
+        try:
+            jpl_names_map = asyncio.run(fetch_all_jpl_names_async(iau_desigs_to_fetch))
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                jpl_names_map = loop.run_until_complete(fetch_all_jpl_names_async(iau_desigs_to_fetch))
+            else:
+                 jpl_names_map = asyncio.run(fetch_all_jpl_names_async(iau_desigs_to_fetch))
+        except Exception as e:
+            print(f"Erro crítico na busca assíncrona de nomes do JPL: {e}")
+
+    for item in all_combined_data:
+        item['Nome Completo'] = jpl_names_map.get(item.get('Designação IAU'), item.get('Designação IAU'))
+    # ----- FIM DA NOVA ETAPA -----
 
     df = pd.DataFrame(all_combined_data)
     if df.empty:

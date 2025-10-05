@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}FAQ - Asteroid Hub GEPPAA{% endblock %}
+
+{% block content %}
+<div class="main-card">
+    <div class="card-body">
+        <h2 class="card-title text-center mb-4"><i class="fas fa-question-circle me-2"></i>Perguntas Frequentes (FAQ)</h2>
+        <p class="text-center text-muted mb-5">Tire as suas dúvidas sobre os termos e dados apresentados na tabela de resultados.</p>
+
+        <div class="accordion" id="faqAccordion">
+
+            <h4 class="text-muted mt-5 mb-3">Sobre o Objeto</h4>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingObjeto">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseObjeto" aria-expanded="false" aria-controls="collapseObjeto">
+                        🪐 O que significa a coluna 'Objeto'?
+                    </button>
+                </h2>
+                <div id="collapseObjeto" class="accordion-collapse collapse" aria-labelledby="headingObjeto" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Esta coluna mostra a designação original usada para iniciar a busca. Códigos como <code>IUc7254</code>, <code>P11jMkA</code> ou <code>P21ESwb</code> são gerados por programas de busca de asteroides, como o IASC (International Astronomical Search Collaboration), e representam detecções preliminares. Pense neles como um “número de processo temporário” atribuído a uma possível nova descoberta antes de o Minor Planet Center (MPC) confirmar que o objeto realmente existe.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingStatus">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatus" aria-expanded="false" aria-controls="collapseStatus">
+                        🛰️ O que é o 'Status do Objeto'?
+                    </button>
+                </h2>
+                <div id="collapseStatus" class="accordion-collapse collapse" aria-labelledby="headingStatus" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        O status do objeto revela em que fase da sua trajetória de descoberta ele se encontra. O MPC e o IASC utilizam essas categorias:
+                        <ul>
+                            <li><strong>Preliminar:</strong> Detecções que parecem válidas, mas ainda não foram totalmente verificadas.</li>
+                            <li><strong>Provisório:</strong> O MPC confirma que o objeto existe e lhe dá uma designação oficial provisória (ex: <code>2007 NJ</code>).</li>
+                            <li><strong>Numerado:</strong> A órbita torna-se bem determinada e o objeto recebe um número permanente (ex: <code>(550832)</code>).</li>
+                            <li><strong>Nomeado:</strong> O descobridor pode sugerir um nome, que é aprovado pela IAU (ex: <code>(550832) Silvanacopceski</code>).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingAsterisco">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAsterisco" aria-expanded="false" aria-controls="collapseAsterisco">
+                        ✳️ O que significa a coluna (*)?
+                    </button>
+                </h2>
+                <div id="collapseAsterisco" class="accordion-collapse collapse" aria-labelledby="headingAsterisco" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                         O asterisco (*) identifica a observação-chave que fez o sistema do MPC reconhecer um conjunto de imagens como um novo objeto. É como a “faísca” que inicia o processo de catalogação. É importante notar que isto não indica o crédito de descoberta, que só é decidido mais tarde.
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="text-muted mt-5 mb-3">Sobre a Identificação e Órbita</h4>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingDesignacaoIAU">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDesignacaoIAU" aria-expanded="false" aria-controls="collapseDesignacaoIAU">
+                        🔢 O que é a 'Designação IAU'?
+                    </button>
+                </h2>
+                <div id="collapseDesignacaoIAU" class="accordion-collapse collapse" aria-labelledby="headingDesignacaoIAU" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É a “matrícula” oficial do objeto. Se a órbita ainda não é bem conhecida, ele recebe uma <strong>Designação Provisória</strong> (ex: <code>2007 NJ</code>). Quando a órbita se torna estável, o objeto pode receber um <strong>Número Permanente</strong> (ex: <code>(550832)</code>).
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTipoOrbita">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTipoOrbita" aria-expanded="false" aria-controls="collapseTipoOrbita">
+                        🪩 O que significa 'Tipo de Órbita'?
+                    </button>
+                </h2>
+                <div id="collapseTipoOrbita" class="accordion-collapse collapse" aria-labelledby="headingTipoOrbita" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É a “vizinhança” no Sistema Solar onde o objeto orbita. Exemplos: <strong>MBA</strong> (Cintura Principal, entre Marte e Júpiter), <strong>NEA</strong> (próximo da Terra) ou <strong>TNO</strong> (além de Netuno).
+                    </div>
+                </div>
+            </div>
+            
+             <div class="accordion-item">
+                <h2 class="accordion-header" id="headingNomeCompleto">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNomeCompleto" aria-expanded="false" aria-controls="collapseNomeCompleto">
+                        🧭 O que é o 'Nome Completo'?
+                    </button>
+                </h2>
+                <div id="collapseNomeCompleto" class="accordion-collapse collapse" aria-labelledby="headingNomeCompleto" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É o nome oficial do objeto, quando atribuído. Apenas objetos já numerados recebem um nome, que é proposto pelos descobridores e aprovado pela IAU. Exemplo: <code>(550832) Silvanacopceski</code>.
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="text-muted mt-5 mb-3">Sobre os Dados da Observação</h4>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingDescricao">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDescricao" aria-expanded="false" aria-controls="collapseDescricao">
+                        📜 O que é a 'Descrição'?
+                    </button>
+                </h2>
+                <div id="collapseDescricao" class="accordion-collapse collapse" aria-labelledby="headingDescricao" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Funciona como a “certidão de nascimento” do objeto, indicando o observatório, a data da descoberta e quem foram os astrônomos creditados.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingIncerteza">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIncerteza" aria-expanded="false" aria-controls="collapseIncerteza">
+                        🎯 O que é o parâmetro de 'Incerteza'?
+                    </button>
+                </h2>
+                <div id="collapseIncerteza" class="accordion-collapse collapse" aria-labelledby="headingIncerteza" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       É a “nota de confiança” da órbita, numa escala de 0 (muito confiável) a 9 (muito incerta). Um valor 0 é como um trilho de trem bem definido; um valor 9 é como tentar prever o voo de uma folha ao vento.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingStringObservacao">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStringObservacao" aria-expanded="false" aria-controls="collapseStringObservacao">
+                        🧾 O que é a 'String da Observação'?
+                    </button>
+                </h2>
+                <div id="collapseStringObservacao" class="accordion-collapse collapse" aria-labelledby="headingStringObservacao" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É um “telegrama técnico” que condensa todos os dados essenciais de uma única observação: horário, coordenadas, magnitude e código do observatório.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingLinhasWAMO">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLinhasWAMO" aria-expanded="false" aria-controls="collapseLinhasWAMO">
+                        📸 O que são as 'Linhas de Observação WAMO'?
+                    </button>
+                </h2>
+                <div id="collapseLinhasWAMO" class="accordion-collapse collapse" aria-labelledby="headingLinhasWAMO" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É o número total de “fotografias” (observações) que o MPC reuniu para este objeto. Quanto mais observações, mais robusta tende a ser a determinação da órbita.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingStatusConsulta">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatusConsulta" aria-expanded="false" aria-controls="collapseStatusConsulta">
+                        ✅ O que é o 'Status de Consulta'?
+                    </button>
+                </h2>
+                <div id="collapseStatusConsulta" class="accordion-collapse collapse" aria-labelledby="headingStatusConsulta" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Indica se a observação encontrada foi validada e 'Publicada' (aceita oficialmente) pelo MPC. O nosso sistema foca-se apenas em dados já validados para garantir confiabilidade.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingMagAbsoluta">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMagAbsoluta" aria-expanded="false" aria-controls="collapseMagAbsoluta">
+                        💡 O que é a 'Magnitude Absoluta'?
+                    </button>
+                </h2>
+                <div id="collapseMagAbsoluta" class="accordion-collapse collapse" aria-labelledby="headingMagAbsoluta" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É uma medida padronizada do brilho intrínseco do objeto. Um valor menor significa um objeto mais brilhante, que tende a ser maior. É a principal forma de estimar o diâmetro de um asteroide.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingReferencia">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReferencia" aria-expanded="false" aria-controls="collapseReferencia">
+                        📚 O que é a 'Referência'?
+                    </button>
+                </h2>
+                <div id="collapseReferencia" class="accordion-collapse collapse" aria-labelledby="headingReferencia" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        É o código da publicação oficial do MPC (como <code>M.P.E.C. 2023-R45</code>) onde esta solução orbital foi divulgada. É um “carimbo de rastreabilidade”.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingObsUtilizadas">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseObsUtilizadas" aria-expanded="false" aria-controls="collapseObsUtilizadas">
+                        🔍 O que são as 'Observações Utilizadas'?
+                    </button>
+                </h2>
+                <div id="collapseObsUtilizadas" class="accordion-collapse collapse" aria-labelledby="headingObsUtilizadas" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       Nem todas as observações disponíveis são usadas no cálculo final de uma órbita. Este campo indica quantas observações foram selecionadas pelo MPC para compor a solução orbital apresentada.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOposicoes">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOposicoes" aria-expanded="false" aria-controls="collapseOposicoes">
+                        🪞 O que são 'Oposições'?
+                    </button>
+                </h2>
+                <div id="collapseOposicoes" class="accordion-collapse collapse" aria-labelledby="headingOposicoes" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Uma oposição é o momento ideal de observação, quando o objeto está no lado oposto do céu ao Sol, visto da Terra. Se um objeto for observado em múltiplas oposições (em diferentes anos), a sua órbita a longo prazo torna-se mais confiável.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingComprimentoArco">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseComprimentoArco" aria-expanded="false" aria-controls="collapseComprimentoArco">
+                        ⏱️ O que é o 'Comprimento do Arco'?
+                    </button>
+                </h2>
+                <div id="collapseComprimentoArco" class="accordion-collapse collapse" aria-labelledby="headingComprimentoArco" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Mede o intervalo de tempo (em dias) entre a primeira e a última observação usadas para determinar a órbita. Quanto mais longo for o “arco”, mais confiável é o cálculo orbital.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingPrimeiraUltimaOposicao">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePrimeiraUltimaOposicao" aria-expanded="false" aria-controls="collapsePrimeiraUltimaOposicao">
+                        📅 O que significa 'Primeira / Última Oposição Usada'?
+                    </button>
+                </h2>
+                <div id="collapsePrimeiraUltimaOposicao" class="accordion-collapse collapse" aria-labelledby="headingPrimeiraUltimaOposicao" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Estes campos mostram a amplitude temporal da observação do objeto em períodos de oposição. Se a primeira oposição usada for 2010 e a última for 2024, significa que os dados cobrem 14 anos, o que é um excelente indicador de confiabilidade.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingPrimeiraUltimaData">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePrimeiraUltimaData" aria-expanded="false" aria-controls="collapsePrimeiraUltimaData">
+                        🗓️ O que significa 'Primeira / Última Data de Observação Usada'?
+                    </button>
+                </h2>
+                <div id="collapsePrimeiraUltimaData" class="accordion-collapse collapse" aria-labelledby="headingPrimeiraUltimaData" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Estas datas são os marcos exatos do “Comprimento do Arco”. Elas indicam o primeiro e o último ponto temporal no conjunto de dados que foi utilizado para calcular a solução orbital.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

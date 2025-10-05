@@ -54,6 +54,13 @@ def minhas_tabelas():
 def configuracoes():
     return render_template('configuracoes.html')
 
+# ----- NOVA ROTA ADICIONADA AQUI -----
+@app.route("/faq")
+def faq():
+    """Renderiza a página de Perguntas Frequentes (FAQ)."""
+    return render_template('faq.html')
+# ------------------------------------
+
 @app.route("/api/run-search", methods=['POST'])
 def api_run_search():
     data = request.json
@@ -79,23 +86,19 @@ def mcti_filter_options():
         if periodo and periodo.strip():
             p_trimmed = periodo.strip()
             if p_trimmed not in options_map[ano]:
-                 options_map[ano].append(p_trimmed)
+                    options_map[ano].append(p_trimmed)
     cur.close()
     conn.close()
     return jsonify(options_map)
 
-# API DE BUSCA DRASTICAMENTE SIMPLIFICADA
 @app.route("/api/search-mcti", methods=['GET'])
 def api_search_mcti():
-    # Apenas busca por Ano e Período (seleção única)
     filtro_ano = request.args.get('ano', '')
     filtro_periodo = request.args.get('periodo', '')
 
-    # Validação simples para garantir que ambos os filtros foram enviados
     if not filtro_ano or not filtro_periodo:
         return jsonify({"error": "É necessário selecionar um Ano e um Período."}), 400
 
-    # Query simples e direta, sem limite de linhas
     query = '''
         SELECT * FROM mcti_detections
         WHERE "Ano" = %s AND TRIM("Periodo") = %s

@@ -1,17 +1,53 @@
-// CONSTANTES GLOBAIS DA APLICAÇÃO
+// CONSTANTES GLOBAIS DA APLICAÇÃO (REORGANIZADAS)
 const ALL_COLUMNS = [
-    'Objeto', 'Status do objeto', 'Designação IAU', 'String da Observação', '(*?)',
-    'Linhas de Observação WAMO', 'Status de Consulta', 'Tipo de Órbita',
-    'Magnitude Absoluta', 'Incerteza', 'Referência', 'Observações Utilizadas',
-    'Oposições', 'Comprimento do Arco (dias)', 'Primeira Oposição Usada',
-    'Última Oposição Usada', 'Primeira Data de Obs. Usada',
-    'Última Data de Obs. Usada', 'Descrição'
+    // 1. Entrada do Usuário
+    'Objeto',
+    // 2. Campos Calculados
+    'Status do objeto',
+    '(*?)',
+    // 3. API JPL (NASA)
+    'Nome Completo',
+    // 4. API WAMO (MPC)
+    'Designação IAU',
+    'String da Observação',
+    'Linhas de Observação WAMO',
+    'Status de Consulta',
+    // 5. Web Scraping (MPC)
+    'Descrição',
+    'Tipo de Órbita',
+    'Magnitude Absoluta',
+    'Incerteza',
+    'Referência',
+    'Observações Utilizadas',
+    'Oposições',
+    'Comprimento do Arco (dias)',
+    'Primeira Oposição Usada',
+    'Última Oposição Usada',
+    'Primeira Data de Obs. Usada',
+    'Última Data de Obs. Usada',
 ];
-const DEFAULT_COLUMNS = [ 'Objeto', 'Status do objeto', '(*?)', 'Designação IAU', 'Tipo de Órbita', 'Incerteza', 'Descrição' ];
+
+const DEFAULT_COLUMNS = [
+    // 1. Entrada do Usuário
+    'Objeto',
+    // 2. Campos Calculados
+    'Status do objeto',
+    '(*?)',
+    // 3. API JPL (NASA)
+    'Nome Completo',
+    // 4. API WAMO (MPC)
+    'Designação IAU',
+    // 5. Web Scraping (MPC)
+    'Tipo de Órbita',
+    'Descrição',
+    
+    
+];
+
 
 let appState = {};
 let tourTimeouts = [];
-let activePopovers = []; // Novo: Array para controlar popovers ativos
+let activePopovers = [];
 
 function saveStateToLocalStorage() {
     localStorage.setItem('asteroidHubState', JSON.stringify(appState));
@@ -35,7 +71,7 @@ function loadStateFromLocalStorage() {
 
 loadStateFromLocalStorage();
 
-// --- FERRAMENTAS GLOBAIS DE UI E DICAS ---
+// --- O RESTO DO FICHEIRO CONTINUA EXATAMENTE IGUAL ---
 function lockContent(exceptions = []) {
     document.querySelectorAll('.main-card, .results-card').forEach(el => {
         if (!exceptions.includes(el)) {
@@ -46,12 +82,10 @@ function lockContent(exceptions = []) {
         if(el) el.classList.add('in-focus');
     });
 }
-
 function unlockContent() {
     document.querySelectorAll('.content-locked').forEach(el => el.classList.remove('content-locked'));
     document.querySelectorAll('.in-focus').forEach(el => el.classList.remove('in-focus'));
 }
-
 function getPopoverTitleWithCloseButton(originalTitle) {
     return `
         <div class="d-flex justify-content-between align-items-center">
@@ -60,30 +94,25 @@ function getPopoverTitleWithCloseButton(originalTitle) {
         </div>
     `;
 }
-
 function showDynamicPopover(element, title, content, options = {}) {
     if (!element) return;
-
     const oldInstance = bootstrap.Popover.getInstance(element);
     if(oldInstance) oldInstance.dispose();
-
     const config = {
         timeout: options.timeout || null,
         placement: options.placement || 'bottom',
         tourStep: options.tourStep || null,
-        showCloseButton: options.showCloseButton !== false // Default é true
+        showCloseButton: options.showCloseButton !== false
     };
-
     let finalContent = content;
     if (config.tourStep) {
         const buttonText = config.tourStep.current < config.tourStep.total ? "Próximo Passo &raquo;" : "Finalizar Tour";
         finalContent += `<div class="d-flex justify-content-end mt-2 pt-2 border-top border-secondary">
-                            <button class="btn btn-sm btn-outline-light popover-skip-button" onclick="advanceTour(${config.tourStep.current})">
-                                ${buttonText}
-                            </button>
-                         </div>`;
+                                <button class="btn btn-sm btn-outline-light popover-skip-button" onclick="advanceTour(${config.tourStep.current})">
+                                    ${buttonText}
+                                </button>
+                             </div>`;
     }
-
     const popover = new bootstrap.Popover(element, {
         title: config.showCloseButton ? getPopoverTitleWithCloseButton(title) : title,
         content: finalContent,
@@ -94,11 +123,9 @@ function showDynamicPopover(element, title, content, options = {}) {
         animation: true,
         customClass: 'popover-tip'
     });
-
     element.classList.add('spotlight');
     popover.show();
-    activePopovers.push(popover); // Adiciona à lista de popovers ativos
-
+    activePopovers.push(popover);
     if (config.timeout) {
         const timeoutId = setTimeout(() => {
             popover.hide();
@@ -107,11 +134,8 @@ function showDynamicPopover(element, title, content, options = {}) {
         tourTimeouts.push(timeoutId);
     }
 }
-
-// --- INICIALIZADORES GLOBAIS ---
 document.addEventListener('DOMContentLoaded', function () {
     const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-    
     popoverTriggerList.forEach(popoverTriggerEl => {
         popoverTriggerEl.addEventListener('show.bs.popover', () => {
             const popoverInstance = bootstrap.Popover.getInstance(popoverTriggerEl);
@@ -123,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
     document.body.addEventListener('click', function(event) {
         if (event.target.classList.contains('popover-close-btn')) {
             const popoverEl = event.target.closest('.popover');
@@ -136,7 +159,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
-
     const dismissibleAlerts = document.querySelectorAll('.alert-dismissible');
     const visibleAlerts = [];
     dismissibleAlerts.forEach(alert => {
@@ -151,7 +173,6 @@ document.addEventListener('DOMContentLoaded', function () {
             unlockContent();
         });
     });
-
     if (visibleAlerts.length > 0) {
         lockContent(visibleAlerts);
     }
