@@ -1,7 +1,10 @@
 Flask
-Flask-Session
+gunicorn
 pandas
 requests
 beautifulsoup4
 aiohttp
-gunicorn
+
+# Novas bibliotecas para o banco de dados
+psycopg2-binary
+python-dotenv
