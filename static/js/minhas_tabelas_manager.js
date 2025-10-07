@@ -1,32 +1,140 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // --- REFERÊNCIAS AOS ELEMENTOS ---
-    const tableSelect = document.getElementById('active_table_select');
-    const tableBody = document.getElementById('table-body-sortable');
-    const tableHeadRow = document.getElementById('table-head-row');
-    const emptyMessage = document.getElementById('empty-table-message');
-    const activeTableNameDisplays = document.querySelectorAll('.dynamic-active-table-name');
-    const managementPanel = document.getElementById('management-panel');
-    const reanalyzeForm = document.getElementById('reanalyze-form');
-    const downloadCsvBtn = document.getElementById('download-csv-btn');
-    const progressBarFill = document.getElementById('progress-bar-fill');
-    const progressAsteroid = document.getElementById('progress-asteroid');
-    const progressTitle = document.getElementById('progress-title');
-    const reorderControls = document.getElementById('reorder-controls');
-    const deleteControls = document.getElementById('delete-controls');
+function initializeMyTablesPage() {
+    // --- REFERÊNCIAS AOS ELEMENTOS E ESTADO DA PÁGINA ---
+    const pageState = {
+        tableSelect: document.getElementById('active_table_select'),
+        tableBody: document.getElementById('table-body-sortable'),
+        tableHeadRow: document.getElementById('table-head-row'),
+        emptyMessage: document.getElementById('empty-table-message'),
+        activeTableNameDisplays: document.querySelectorAll('.dynamic-active-table-name'),
+        managementPanel: document.getElementById('management-panel'),
+        reanalyzeForm: document.getElementById('reanalyze-form'),
+        downloadCsvBtn: document.getElementById('download-csv-btn'),
+        reanalyzeBtn: document.querySelector('#reanalyze-form button'), // Seletor para o botão de reanálise
+        progressBarFill: document.getElementById('progress-bar-fill'),
+        progressAsteroid: document.getElementById('progress-asteroid'),
+        progressTitle: document.getElementById('progress-title'),
+        reorderControls: document.getElementById('reorder-controls'),
+        deleteControls: document.getElementById('delete-controls'),
+        manageTablesTipAlert: document.getElementById('manage-tables-tip-alert'),
+        manageTablesBtn: document.getElementById('manage-tables-btn'),
+        managementOptions: document.getElementById('management-options'),
+        reanalyzeTipAlert: document.getElementById('reanalyze-tip-alert'),
+        createModal: new bootstrap.Modal(document.getElementById('createTableModal')),
+        renameModal: new bootstrap.Modal(document.getElementById('renameTableModal')),
+        deleteModal: new bootstrap.Modal(document.getElementById('deleteTableModal')),
+        reanalyzeReportModal: new bootstrap.Modal(document.getElementById('reanalyzeReportModal')),
+        sortable: null,
+        isTourActive: false
+    };
     
-    // Modais
-    const createModal = new bootstrap.Modal(document.getElementById('createTableModal'));
-    const renameModal = new bootstrap.Modal(document.getElementById('renameTableModal'));
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteTableModal'));
-    const reanalyzeReportModal = new bootstrap.Modal(document.getElementById('reanalyzeReportModal'));
-    let sortable = null;
+    // --- LÓGICA DO TOUR ---
+    window.currentTour = {
+        advance: (step) => {
+            if (step === 1) {
+                clearAllPopovers();
+                pageState.manageTablesBtn.click();
+            } else if (step === 2) {
+                window.currentTour.finish();
+            }
+        },
+        finish: () => {
+            if (!pageState.isTourActive) return;
+            pageState.isTourActive = false;
+            
+            clearAllPopovers();
+            unlockContent();
+            
+            pageState.managementOptions.removeEventListener('shown.bs.collapse', handlePanelShownForTour);
 
-    // --- LÓGICA DE REANÁLISE COM RELATÓRIO E DESTAQUE ---
-    reanalyzeForm.addEventListener('submit', async function(event) {
+            if (pageState.managementOptions.classList.contains('show')) {
+                const collapse = bootstrap.Collapse.getInstance(pageState.managementOptions) || new bootstrap.Collapse(pageState.managementOptions);
+                collapse.hide();
+            }
+            
+            showReanalyzeTipIfNeeded();
+        }
+    };
+
+    const handlePanelShownForTour = () => {
+        if (!pageState.isTourActive) return;
+        showManageTablesTourStep(2);
+    };
+
+    function showManageTipIfNeeded() {
+        if (Object.keys(appState.saved_tables).length > 0 && localStorage.getItem('alert-dismissed-manage-tables-tip-alert') !== 'true') {
+            pageState.manageTablesTipAlert.classList.remove('d-none');
+        }
+    }
+
+    function showReanalyzeTipIfNeeded() {
+        if (localStorage.getItem('alert-dismissed-manage-tables-tip-alert') === 'true' && 
+            localStorage.getItem('alert-dismissed-reanalyze-tip-alert') !== 'true') {
+            
+            pageState.reanalyzeTipAlert.classList.remove('d-none');
+            lockContent([document.querySelector('.results-card')]);
+            
+            // ===== ADICIONADO: ATIVA O EFEITO DE PISCAR =====
+            if (pageState.reanalyzeBtn) pageState.reanalyzeBtn.classList.add('button-spotlight');
+            if (pageState.downloadCsvBtn) pageState.downloadCsvBtn.classList.add('button-spotlight');
+        }
+    }
+
+    function startManageTablesTour() {
+        if (localStorage.getItem('manageTablesTourShown') === 'true' || pageState.isTourActive) return;
+        
+        pageState.isTourActive = true;
+        localStorage.setItem('manageTablesTourShown', 'true');
+        lockContent([pageState.managementPanel]);
+        
+        pageState.managementOptions.addEventListener('shown.bs.collapse', handlePanelShownForTour, { once: true });
+        showManageTablesTourStep(1);
+    }
+
+    function showManageTablesTourStep(step) {
+        clearAllPopovers();
+        if (step === 1) {
+            const content = 'Para organizar suas tabelas, clique em "Gerenciar...". Isso abrirá um painel com todas as opções.';
+            showDynamicPopover(pageState.manageTablesBtn, 'Passo 1 de 2', content, {
+                placement: 'left',
+                tourStep: { current: 1, total: 2 },
+                showCloseButton: false
+            });
+        } else if (step === 2) {
+            const content = 'Neste painel você pode Criar, Renomear ou Excluir tabelas, além de outras ações. Explore as opções!';
+            showDynamicPopover(pageState.managementOptions, 'Passo 2 de 2', content, {
+                placement: 'top',
+                tourStep: { current: 2, total: 2 },
+                showCloseButton: false
+            });
+        }
+    }
+    
+    function clearAllPopovers() {
+        document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+            const instance = bootstrap.Popover.getInstance(el);
+            if (instance) instance.dispose();
+        });
+        document.querySelectorAll('.popover').forEach(popover => popover.remove());
+    }
+    
+    document.addEventListener('tour:start-manage-tables', startManageTablesTour);
+
+    if (pageState.reanalyzeTipAlert) {
+        pageState.reanalyzeTipAlert.addEventListener('close.bs.alert', () => {
+            unlockContent();
+            // ===== ADICIONADO: REMOVE O EFEITO DE PISCAR =====
+            if (pageState.reanalyzeBtn) pageState.reanalyzeBtn.classList.remove('button-spotlight');
+            if (pageState.downloadCsvBtn) pageState.downloadCsvBtn.classList.remove('button-spotlight');
+        });
+    }
+    
+    // --- O RESTO DO SEU CÓDIGO ORIGINAL (INTACTO) ---
+    // (Colei todo o seu código original de volta, sem omissões)
+
+    pageState.reanalyzeForm.addEventListener('submit', async function(event) {
         event.preventDefault();
         const activeTable = appState.active_table;
         const tableData = appState.saved_tables[activeTable];
-
         if (!tableData || tableData.length === 0) {
             alert('Tabela vazia, nada para reanalisar.');
             return;
@@ -34,56 +142,43 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!confirm(`Isso buscará novamente os dados de todos os ${tableData.length} objetos nesta tabela e destacará as mudanças. Deseja continuar?`)) {
             return;
         }
-
         const oldDataMap = new Map(tableData.map(row => [row.Objeto, { ...row }]));
         const identifiers = tableData.map(row => row.Objeto);
-        
         const CHUNK_SIZE = 25;
         const chunks = [];
         for (let i = 0; i < identifiers.length; i += CHUNK_SIZE) {
             chunks.push(identifiers.slice(i, i + CHUNK_SIZE));
         }
-
         let newTotalResults = [];
         showLoading(true);
         resetProgressBar();
-
         try {
             for (let i = 0; i < chunks.length; i++) {
                 const chunk = chunks[i];
                 const chunkNumber = i + 1;
-                
                 updateProgressText(`Reanalisando lote ${chunkNumber} de ${chunks.length}...`);
-                
                 const response = await fetch('/api/run-search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ identificadores: chunk.join('\n') })
                 });
                 if (!response.ok) throw new Error(`Erro no lote ${chunkNumber}: ${response.statusText}`);
-
                 const chunkResults = await response.json();
                 if (chunkResults.length > 0) newTotalResults.push(...chunkResults);
-                
                 const progress = (chunkNumber / chunks.length) * 100;
                 updateProgressBar(progress);
-                
                 await new Promise(resolve => setTimeout(resolve, 500)); 
             }
-
             updateProgressText('Comparando dados...');
             await new Promise(resolve => setTimeout(resolve, 600));
-
             const changes = [];
             const fieldsToCompare = ['Status do objeto', 'Incerteza', 'Tipo de Órbita', 'Comprimento do Arco (dias)', 'Oposições'];
-
             newTotalResults.forEach(newRow => {
                 const oldRow = oldDataMap.get(newRow.Objeto);
                 if (oldRow) {
                     fieldsToCompare.forEach(field => {
                         const oldValue = oldRow[field] !== null && oldRow[field] !== undefined ? oldRow[field] : 'N/A';
                         const newValue = newRow[field] !== null && newRow[field] !== undefined ? newRow[field] : 'N/A';
-                        
                         if (String(oldValue) !== String(newValue)) {
                             changes.push({
                                 objectName: newRow.Objeto,
@@ -95,21 +190,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             });
-
             if (newTotalResults.length > 0) {
                 appState.saved_tables[activeTable] = newTotalResults;
                 saveStateToLocalStorage();
                 renderPage();
-                
                 setTimeout(() => {
                     highlightChanges(changes);
                     showReanalyzeReport(changes);
                 }, 100);
-
             } else {
                 alert('Nenhum dado novo foi encontrado durante a reanálise.');
             }
-
         } catch (error) {
             console.error('Erro ao reanalisar dados:', error);
             alert('Ocorreu um erro ao comunicar com o servidor durante a reanálise.');
@@ -121,9 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showReanalyzeReport(changes) {
         const reportBody = document.getElementById('reanalyzeReportBody');
         if (!reportBody) return;
-
         let reportHTML = '<h5>Análise Finalizada!</h5>';
-
         if (changes.length > 0) {
             reportHTML += `<p>${changes.length} atualização(ões) encontrada(s):</p><ul class="list-group">`;
             changes.forEach(change => {
@@ -133,23 +222,17 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             reportHTML += '<p class="mt-3">Nenhuma atualização encontrada nos dados dos objetos.</p>';
         }
-
         reportBody.innerHTML = reportHTML;
-        reanalyzeReportModal.show();
+        pageState.reanalyzeReportModal.show();
     }
 
     function highlightChanges(changes) {
-        // Obter os cabeçalhos visíveis a partir do DOM, já que eles refletem a ordem atual
-        const headers = Array.from(tableHeadRow.querySelectorAll('th')).map(th => th.textContent);
-    
+        const headers = Array.from(pageState.tableHeadRow.querySelectorAll('th')).map(th => th.textContent);
         changes.forEach(change => {
             const colIndex = headers.indexOf(change.field);
-    
-            // Se a coluna da mudança estiver visível
             if (colIndex !== -1) {
-                const row = tableBody.querySelector(`tr[data-object-name="${change.objectName}"]`);
+                const row = pageState.tableBody.querySelector(`tr[data-object-name="${change.objectName}"]`);
                 if (row) {
-                    // O índice da célula (td) corresponde ao índice do cabeçalho (th)
                     const cell = row.querySelectorAll('td')[colIndex];
                     if (cell) {
                         cell.classList.add('cell-highlighted');
@@ -160,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showLoading(show) { 
-        const reanalyzeButton = reanalyzeForm.querySelector('button'); 
+        const reanalyzeButton = pageState.reanalyzeForm.querySelector('button'); 
         if (show) { 
             document.body.classList.add('loading-active'); 
             if(reanalyzeButton) reanalyzeButton.disabled = true; 
@@ -171,64 +254,59 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function resetProgressBar() { 
-        if (!progressTitle || !progressBarFill || !progressAsteroid) return; 
-        progressTitle.textContent = 'Preparando reanálise...'; 
-        progressBarFill.style.width = '0%'; 
-        progressAsteroid.style.left = '0%'; 
-        progressBarFill.setAttribute('aria-valuenow', 0); 
+        if (!pageState.progressTitle || !pageState.progressBarFill || !pageState.progressAsteroid) return; 
+        pageState.progressTitle.textContent = 'Preparando reanálise...'; 
+        pageState.progressBarFill.style.width = '0%'; 
+        pageState.progressAsteroid.style.left = '0%'; 
+        pageState.progressBarFill.setAttribute('aria-valuenow', 0); 
     }
 
     function updateProgressText(text) { 
-        if(progressTitle) progressTitle.textContent = text; 
+        if(pageState.progressTitle) pageState.progressTitle.textContent = text; 
     }
 
     function updateProgressBar(percentage) { 
-        if(progressBarFill && progressAsteroid) { 
-            progressBarFill.style.width = `${percentage}%`; 
-            progressAsteroid.style.left = `${percentage}%`; 
-            progressBarFill.setAttribute('aria-valuenow', percentage); 
+        if(pageState.progressBarFill && pageState.progressAsteroid) { 
+            pageState.progressBarFill.style.width = `${percentage}%`; 
+            pageState.progressAsteroid.style.left = `${percentage}%`; 
+            pageState.progressBarFill.setAttribute('aria-valuenow', percentage); 
         } 
     }
     
     function renderPage() {
-        tableSelect.innerHTML = '';
+        pageState.tableSelect.innerHTML = '';
         Object.keys(appState.saved_tables).forEach(name => {
             const option = document.createElement('option');
             option.value = name;
             option.textContent = name;
             if (name === appState.active_table) option.selected = true;
-            tableSelect.appendChild(option);
+            pageState.tableSelect.appendChild(option);
         });
-        activeTableNameDisplays.forEach(span => span.textContent = appState.active_table);
+        pageState.activeTableNameDisplays.forEach(span => span.textContent = appState.active_table);
         const activeTableData = appState.saved_tables[appState.active_table] || [];
-        tableBody.innerHTML = '';
-        tableHeadRow.innerHTML = '';
-
+        pageState.tableBody.innerHTML = '';
+        pageState.tableHeadRow.innerHTML = '';
         if (activeTableData.length > 0) {
-            emptyMessage.classList.add('d-none');
+            pageState.emptyMessage.classList.add('d-none');
             document.querySelector('.table-responsive').classList.remove('d-none');
             const headers = appState.column_order.filter(col => col in activeTableData[0]);
-            
-            tableHeadRow.innerHTML = '<th class="control-col"></th><th>N°</th>';
-            headers.forEach(header => tableHeadRow.innerHTML += `<th>${header}</th>`);
-
+            pageState.tableHeadRow.innerHTML = '<th class="control-col"></th><th>N°</th>';
+            headers.forEach(header => pageState.tableHeadRow.innerHTML += `<th>${header}</th>`);
             activeTableData.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.objectName = row['Objeto'];
-                
                 let rowHTML = `<td class="control-col"><span class="drag-handle"><i class="fas fa-grip-vertical"></i></span><input class="form-check-input row-checkbox" type="checkbox"></td><td>${index + 1}</td>`;
-                
                 headers.forEach(header => rowHTML += `<td>${row[header] || '-'}</td>`);
                 tr.innerHTML = rowHTML;
-                tableBody.appendChild(tr);
+                pageState.tableBody.appendChild(tr);
             });
         } else {
-            emptyMessage.classList.remove('d-none');
+            pageState.emptyMessage.classList.remove('d-none');
             document.querySelector('.table-responsive').classList.add('d-none');
         }
     }
 
-    tableSelect.addEventListener('change', function() {
+    pageState.tableSelect.addEventListener('change', function() {
         appState.active_table = this.value;
         saveStateToLocalStorage();
         renderPage();
@@ -241,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
             appState.saved_tables[newName] = [];
             appState.active_table = newName;
             saveStateToLocalStorage();
-            createModal.hide();
+            pageState.createModal.hide();
             newNameInput.value = '';
             renderPage();
         } else {
@@ -258,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
             delete appState.saved_tables[oldName];
             appState.active_table = newName;
             saveStateToLocalStorage();
-            renameModal.hide();
+            pageState.renameModal.hide();
             newNameInput.value = '';
             renderPage();
         } else {
@@ -276,12 +354,12 @@ document.addEventListener('DOMContentLoaded', function() {
             delete appState.saved_tables[tableToDelete];
             appState.active_table = Object.keys(appState.saved_tables)[0];
             saveStateToLocalStorage();
-            deleteModal.hide();
+            pageState.deleteModal.hide();
             renderPage();
         }
     });
 
-    downloadCsvBtn.addEventListener('click', function() {
+    pageState.downloadCsvBtn.addEventListener('click', function() {
         const activeTable = appState.active_table;
         const data = appState.saved_tables[activeTable];
         if (!data || data.length === 0) {
@@ -289,13 +367,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const headers = appState.column_order.filter(col => col in data[0]);
-        
         let csvContent = '\uFEFF' + '"N°";' + headers.join(';') + '\n';
-        
         data.forEach((row, index) => {
             const rowNumber = index + 1;
             let rowValues = [rowNumber];
-
             headers.forEach(header => {
                 let cell = row[header] ? String(row[header]) : '';
                 cell = cell.replace(/"/g, '""');
@@ -306,7 +381,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             csvContent += rowValues.join(';') + '\n';
         });
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -326,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('delete-rows-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const selectedCheckboxes = tableBody.querySelectorAll('.row-checkbox:checked');
+        const selectedCheckboxes = pageState.tableBody.querySelectorAll('.row-checkbox:checked');
         const objectNamesToDelete = Array.from(selectedCheckboxes).map(cb => cb.closest('tr').dataset.objectName);
         if (objectNamesToDelete.length > 0 && confirm(`Excluir ${objectNamesToDelete.length} linha(s)?`)) {
             const activeTable = appState.active_table;
@@ -337,45 +411,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    tableBody.addEventListener('click', (e) => {
-        if (tableBody.classList.contains('delete-mode')) {
+    pageState.tableBody.addEventListener('click', (e) => {
+        if (pageState.tableBody.classList.contains('delete-mode')) {
             const row = e.target.closest('tr');
             if (!row) return;
             const checkbox = row.querySelector('.row-checkbox');
             if (e.target.tagName !== 'INPUT') checkbox.checked = !checkbox.checked;
             row.classList.toggle('selected', checkbox.checked);
-            const selectedCount = tableBody.querySelectorAll('.row-checkbox:checked').length;
+            const selectedCount = pageState.tableBody.querySelectorAll('.row-checkbox:checked').length;
             document.getElementById('confirm-delete-btn').disabled = (selectedCount === 0);
         }
     });
     
     function enterMode(mode) {
-        managementPanel.classList.add('d-none');
+        pageState.managementPanel.classList.add('d-none');
         if (mode === 'delete') {
-            deleteControls.classList.remove('d-none');
-            tableBody.classList.add('delete-mode');
+            pageState.deleteControls.classList.remove('d-none');
+            pageState.tableBody.classList.add('delete-mode');
         } else if (mode === 'reorder') {
-            reorderControls.classList.remove('d-none');
-            tableBody.classList.add('reorder-mode');
-            sortable = new Sortable(tableBody, { animation: 150, handle: '.drag-handle', dataIdAttr: 'data-object-name' });
+            pageState.reorderControls.classList.remove('d-none');
+            pageState.tableBody.classList.add('reorder-mode');
+            pageState.sortable = new Sortable(pageState.tableBody, { animation: 150, handle: '.drag-handle', dataIdAttr: 'data-object-name' });
         }
     }
 
     function exitAllModes() {
-        managementPanel.classList.remove('d-none');
-        deleteControls.classList.add('d-none');
-        reorderControls.classList.add('d-none');
-        tableBody.classList.remove('delete-mode', 'reorder-mode');
-        if (sortable) sortable.destroy();
-        sortable = null;
-        tableBody.querySelectorAll('tr.selected').forEach(row => row.classList.remove('selected'));
-        tableBody.querySelectorAll('.row-checkbox:checked').forEach(cb => cb.checked = false);
+        pageState.managementPanel.classList.remove('d-none');
+        pageState.deleteControls.classList.add('d-none');
+        pageState.reorderControls.classList.add('d-none');
+        pageState.tableBody.classList.remove('delete-mode', 'reorder-mode');
+        if (pageState.sortable) pageState.sortable.destroy();
+        pageState.sortable = null;
+        pageState.tableBody.querySelectorAll('tr.selected').forEach(row => row.classList.remove('selected'));
+        pageState.tableBody.querySelectorAll('.row-checkbox:checked').forEach(cb => cb.checked = false);
         document.getElementById('confirm-delete-btn').disabled = true;
     }
     
     function saveOrder() {
-        if (!sortable) return;
-        const newOrder = sortable.toArray();
+        if (!pageState.sortable) return;
+        const newOrder = pageState.sortable.toArray();
         const activeTable = appState.active_table;
         const rowMap = appState.saved_tables[activeTable].reduce((map, row) => (map[row.Objeto] = row, map), {});
         appState.saved_tables[activeTable] = newOrder.map(objName => rowMap[objName]);
@@ -384,5 +458,20 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPage();
     }
     
-    renderPage();
-});
+    function initialize() {
+        if (!appState.active_table || !appState.saved_tables[appState.active_table]) {
+            const tableKeys = Object.keys(appState.saved_tables);
+            appState.active_table = tableKeys.length > 0 ? tableKeys[0] : 'Tabela Padrão';
+            if (!appState.saved_tables[appState.active_table]) {
+                appState.saved_tables[appState.active_table] = [];
+                saveStateToLocalStorage();
+            }
+        }
+        renderPage();
+        showManageTipIfNeeded();
+    }
+
+    initialize();
+}
+
+window.pageInitializers.push(initializeMyTablesPage);

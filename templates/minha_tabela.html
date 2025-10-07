@@ -6,7 +6,7 @@
     <h1 class="display-5 fw-bold m-0">Minhas Tabelas</h1>
 </div>
 
-<div class="alert alert-info alert-dismissible fade show" id="manage-tables-alert" role="alert">
+<div class="alert alert-info alert-dismissible fade show d-none" id="manage-tables-tip-alert" role="alert">
     <div class="d-flex align-items-center">
         <i class="fas fa-info-circle fa-lg me-3"></i>
         <div>
@@ -15,7 +15,6 @@
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
-
 <div class="main-card mx-auto mb-4" id="management-panel">
     <div class="d-flex flex-wrap gap-3 align-items-center">
         <div class="d-flex align-items-center gap-2">
@@ -23,8 +22,7 @@
             <select id="active_table_select" class="form-select"></select>
         </div>
         <div class="ms-auto d-flex align-items-center gap-2">
-             <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#management-options"><i class="fas fa-cog me-2"></i>Gerenciar...</button>
-             <span class="d-inline-block" data-bs-toggle="popover" data-bs-trigger="click" data-bs-html="true" tabindex="0" title="Painel de Controle" data-bs-content="Clique para ver todas as ações para a tabela selecionada."><i class="fas fa-question-circle text-secondary fs-4"></i></span>
+             <button id="manage-tables-btn" class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#management-options"><i class="fas fa-cog me-2"></i>Gerenciar...</button>
         </div>
     </div>
     <div class="collapse mt-3" id="management-options">
@@ -57,6 +55,15 @@
     </div>
 </div>
 
+<div class="alert alert-info alert-dismissible fade show d-none" id="reanalyze-tip-alert" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-info-circle fa-lg me-3"></i>
+        <div>
+            <strong>Dica Final:</strong> Mantenha seus dados atualizados com o botão <strong>"Reanalisar"</strong>, que busca as informações mais recentes para todos os objetos na tabela. Para usar os dados fora do site, clique em <strong>"Baixar"</strong> e exporte tudo para um ficheiro CSV, compatível com Excel.
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 <div class="results-card">
     <div class="results-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h4 class="m-0">Conteúdo: <span class="text-info dynamic-active-table-name"></span></h4>
@@ -123,7 +130,6 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
