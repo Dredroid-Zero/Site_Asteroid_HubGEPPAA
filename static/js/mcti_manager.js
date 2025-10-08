@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+function initializeMctiPage() {
     // --- REFERÊNCIAS AOS ELEMENTOS ---
     const searchForm = document.getElementById('mcti-search-form');
     const resultsCard = document.getElementById('mcti-results-card');
@@ -17,13 +17,21 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- INICIALIZAÇÃO DA PÁGINA ---
     async function initializePage() {
         try {
+            console.log("PASSO A: Iniciando busca por opções de filtro...");
             const response = await fetch('/api/mcti-filter-options');
             if (!response.ok) throw new Error('Falha ao carregar opções de filtro');
             
             allFilterOptions = await response.json();
+            
+            // ===== PISTA DE DEPURAÇÃO 1 =====
+            console.log("PASSO B: Opções de filtro carregadas do servidor:", allFilterOptions);
+
             populateAnoDropdown(Object.keys(allFilterOptions));
+            filtroAno.disabled = false; // Ativa o menu de Ano
+
         } catch (error) {
-            console.error("Erro ao inicializar a página:", error);
+            console.error("ERRO ao inicializar a página:", error);
+            filtroAno.innerHTML = '<option selected value="">Erro ao carregar</option>';
             alert("Não foi possível carregar as opções de filtro. Por favor, recarregue a página.");
         }
     }
@@ -36,13 +44,21 @@ document.addEventListener('DOMContentLoaded', function () {
             option.textContent = ano;
             filtroAno.appendChild(option);
         });
+        console.log("PASSO C: Menu de 'Ano' populado com sucesso.");
     }
 
     function updatePeriodoDropdown() {
         const selectedAno = filtroAno.value;
         filtroPeriodo.innerHTML = '<option selected value="">Selecione um Período...</option>';
 
+        // ===== PISTAS DE DEPURAÇÃO 2 =====
+        console.log(`PASSO D: Função 'updatePeriodoDropdown' foi chamada.`);
+        console.log(`PASSO E: Ano selecionado pelo usuário: "${selectedAno}" (tipo: ${typeof selectedAno})`);
+        console.log("PASSO F: Verificando o conteúdo de 'allFilterOptions' neste momento:", allFilterOptions);
+        console.log(`PASSO G: Tentando aceder a allFilterOptions["${selectedAno}"]:`, allFilterOptions[selectedAno]);
+
         if (selectedAno && allFilterOptions[selectedAno]) {
+            console.log("PASSO H: SUCESSO! Dados encontrados para o ano. Populando períodos...");
             const periodosDoAno = allFilterOptions[selectedAno];
             periodosDoAno.forEach(periodo => {
                 const option = document.createElement('option');
@@ -52,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             filtroPeriodo.disabled = false;
         } else {
+            console.log("PASSO H: FALHA! Nenhum dado encontrado para este ano ou ano não selecionado.");
             filtroPeriodo.disabled = true;
         }
     }
@@ -61,34 +78,28 @@ document.addEventListener('DOMContentLoaded', function () {
     searchForm.addEventListener('submit', performInitialSearch);
     keywordInput.addEventListener('input', filterTableByKeyword);
 
-    // --- FUNÇÕES PRINCIPAIS ---
+    // --- FUNÇÕES PRINCIPAIS (código omitido, continua igual) ---
     async function performInitialSearch(event) {
         event.preventDefault();
         const ano = filtroAno.value;
         const periodo = filtroPeriodo.value;
-
         if (!ano || !periodo) {
             alert('Por favor, selecione um Ano e um Período para iniciar a busca.');
             return;
         }
-
         const params = new URLSearchParams({ ano, periodo });
         const url = `/api/search-mcti?${params.toString()}`;
-
         try {
             resultsCard.classList.add('d-none');
             const response = await fetch(url);
             if (!response.ok) throw new Error('Erro ao buscar dados da campanha');
-            
             fullCampaignData = await response.json();
             renderTable(fullCampaignData);
-
         } catch (error) {
             console.error("Erro na busca inicial:", error);
             alert("Ocorreu um erro ao buscar os dados da campanha.");
         }
     }
-
     function filterTableByKeyword() {
         const searchTerm = keywordInput.value.toLowerCase();
         const filteredData = fullCampaignData.filter(row => {
@@ -96,36 +107,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         renderTable(filteredData, false);
     }
-
-    // FUNÇÃO ATUALIZADA com a ordem de colunas personalizada
     function renderTable(data, isNewSearch = true) {
         tableBody.innerHTML = '';
         resultsCard.classList.remove('d-none');
         resultsCount.textContent = `${data.length} de ${fullCampaignData.length} encontrado(s)`;
-
         if (isNewSearch) {
             keywordInput.value = '';
             tableHead.innerHTML = '';
         }
-
-        // Define a ordem exata das colunas a serem exibidas
         const columnOrder = ['Ano', 'Periodo', 'Objeto', 'Linked', 'Observadores', 'Equipe', 'Data', 'Localizacao'];
-
         if (data.length === 0) {
-            // Se não houver dados, garante que o cabeçalho não seja mostrado
             tableHead.innerHTML = ''; 
             emptyMessage.classList.remove('d-none');
             document.querySelector('#mcti-results-card .table-responsive').classList.add('d-none');
             return;
         }
-        
         emptyMessage.classList.add('d-none');
         document.querySelector('#mcti-results-card .table-responsive').classList.remove('d-none');
-        
-        // Cria o cabeçalho da tabela apenas se for uma nova busca
         if (isNewSearch && data.length > 0) {
             const trHead = document.createElement('tr');
-            // Itera sobre a nossa lista ordenada para criar os cabeçalhos
             columnOrder.forEach(headerText => {
                 const th = document.createElement('th');
                 th.textContent = headerText;
@@ -133,11 +133,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             tableHead.appendChild(trHead);
         }
-
-        // Preenche o corpo da tabela com os dados
         data.forEach(row => {
             const trBody = document.createElement('tr');
-            // Itera sobre a nossa lista ordenada para garantir a ordem das células
             columnOrder.forEach(headerText => {
                 const td = document.createElement('td');
                 td.textContent = row[headerText] || '-';
@@ -148,4 +145,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     initializePage();
-});
+}
+
+window.pageInitializers.push(initializeMctiPage);

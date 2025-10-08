@@ -69,6 +69,7 @@ function initializeSearchPage() {
     const mainCard = document.querySelector('.main-card');
     const saveResultsAlert = document.getElementById('save-results-alert');
     const customizeViewAlert = document.getElementById('customize-view-alert');
+    const mctiCatalogTipAlert = document.getElementById('mcti-catalog-tip-alert');
     const newSearchBtn = document.getElementById('new-search-btn');
     const tableSelect = document.getElementById('table-select-dropdown');
     const initialSaveButtons = document.getElementById('initial-save-buttons');
@@ -304,9 +305,9 @@ function initializeSearchPage() {
         document.querySelectorAll('.popover').forEach(popover => popover.remove());
     }
 
-    // Ouve o "sinal" do main.js para iniciar o tour
     document.addEventListener('tour:start-save-results', startGuidedTour);
 
+    // --- LÓGICA DE DICAS DINÂMICAS ---
     searchInput.addEventListener('focus', function() {
         if (localStorage.getItem('multiSearchTipShown') === 'true') return;
         const tipContent = 'Você pode pesquisar vários objetos de uma vez! Basta colar os códigos na caixa de texto, garantindo que cada um fique em uma linha separada.';
@@ -317,6 +318,18 @@ function initializeSearchPage() {
         localStorage.setItem('multiSearchTipShown', 'true');
     }, { once: true });
 
+    function showMctiCatalogTipIfNeeded() {
+        if (mctiCatalogTipAlert && localStorage.getItem('alert-dismissed-mcti-catalog-tip-alert') !== 'true') {
+            mctiCatalogTipAlert.classList.remove('d-none');
+        }
+    }
+    
+    // ===== LÓGICA ALTERADA =====
+    // Removemos a chamada automática ao carregar a página e adicionamos um ouvinte para o sinal.
+    document.addEventListener('tip:multi-search-closed', showMctiCatalogTipIfNeeded);
+
+
+    // --- LÓGICA DE SALVAR E MODO DE SELEÇÃO ---
     saveAllBtn.addEventListener('click', function() { addRowsToTable(tableSelect.value, currentSearchResults); alert(`${currentSearchResults.length} resultado(s) salvo(s) com sucesso em '${tableSelect.value}'.`); });
     saveSelectedBtn.addEventListener('click', function() { const selectedRows = getSelectedRows(); addRowsToTable(tableSelect.value, selectedRows); alert(`${selectedRows.length} resultado(s) salvo(s) com sucesso em '${tableSelect.value}'.`); exitSelectMode(); });
     function addRowsToTable(tableName, rowsToAdd) { if (!appState.saved_tables[tableName]) return; const existingObjects = new Set(appState.saved_tables[tableName].map(r => r.Objeto)); rowsToAdd.forEach(newRow => { if (!existingObjects.has(newRow.Objeto)) { appState.saved_tables[tableName].push(newRow); } }); saveStateToLocalStorage(); }

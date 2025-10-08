@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // OUVINTE PARA FECHAR POPOVERS NORMAIS
+        // OUVINTE PARA FECHAR POPOVERS NORMAIS - VERSÃO CORRIGIDA
         if (event.target.classList.contains('popover-close-btn')) {
             const popoverEl = event.target.closest('.popover');
             if (popoverEl) {
@@ -123,6 +123,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (triggerEl) {
                     const popoverInstance = bootstrap.Popover.getInstance(triggerEl);
                     if (popoverInstance) popoverInstance.hide();
+
+                    // ===== LÓGICA ADICIONADA AQUI =====
+                    // Se o popover fechado for o da 'Busca em Lote', envia um sinal.
+                    if (triggerEl.id === 'identificadores-input') {
+                        document.dispatchEvent(new CustomEvent('tip:multi-search-closed'));
+                    }
                 }
             }
         }

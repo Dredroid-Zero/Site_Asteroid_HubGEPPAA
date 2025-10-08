@@ -3,8 +3,17 @@
 
 {% block content %}
 
-<!-- SEÇÃO DE BUSCA -->
 <div id="search-section">
+    <div class="alert alert-info alert-dismissible fade show d-none" id="mcti-catalog-tip-alert" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle fa-lg me-3"></i>
+            <div>
+                <strong>Dica:</strong> É participante das campanhas MCTI mas não se lembra das suas deteções? 
+                <a href="{{ url_for('deteccoes_mcti') }}" class="alert-link">Visite o Catálogo de Deteções MCTI</a>.
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     <div class="main-card mx-auto">
         <div class="text-center mb-4">
             <h1 class="display-5 fw-bold">Busca de Asteroides</h1>
@@ -23,7 +32,6 @@
     </div>
 </div>
 
-<!-- SEÇÃO DE RESULTADOS -->
 <div id="results-section" class="d-none">
 
     <div class="alert alert-success alert-dismissible fade show" id="save-results-alert" role="alert" style="display: none;">
@@ -85,8 +93,6 @@
         </div>
     </div>
 </div>
-
-<!-- O BLOCO "loading-overlay" FOI REMOVIDO DESTE ARQUIVO -->
 
 {% endblock %}
 
