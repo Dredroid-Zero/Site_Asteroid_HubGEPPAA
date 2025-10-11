@@ -5,35 +5,41 @@ from dotenv import load_dotenv
 from services import run_full_search_logic
 
 load_dotenv()
-# Vamos manter a definição explícita da pasta estática, pois é boa prática.
+# ===== ALTERAÇÃO IMPORTANTE FEITA AQUI =====
+# Isto garante que o Vercel encontra os seus ficheiros CSS e JavaScript.
 app = Flask(__name__, static_folder='static')
+# ==========================================
 
 def get_db_connection():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
 
-# ===== ROTA DE DIAGNÓSTICO ADICIONADA AQUI =====
-@app.route('/debug-list-files')
-def debug_list_files():
-    """
-    Lista todos os ficheiros e pastas a partir da raiz do projeto no servidor.
-    Isto vai nos mostrar se as pastas 'static' e 'templates' existem no deploy.
-    """
-    path = '.'
-    file_list = []
-    for root, dirs, files in os.walk(path):
-        for name in files:
-            file_list.append(os.path.join(root, name))
-        for name in dirs:
-            file_list.append(os.path.join(root, name) + '/')
-    
-    # Retorna a lista como um JSON para fácil visualização
-    return jsonify({
-        "message": "Estrutura de ficheiros no servidor da Vercel:",
-        "current_working_directory": os.getcwd(),
-        "directory_listing": file_list
-    })
-# ==================================================
+@app.route('/init-db')
+def init_db():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS mcti_detections;")
+        cur.execute('''
+            CREATE TABLE mcti_detections (
+                id SERIAL PRIMARY KEY,
+                "Objeto" VARCHAR(50) UNIQUE NOT NULL,
+                "Observadores" TEXT,
+                "Equipe" TEXT,
+                "Localizacao" TEXT,
+                "Data" TEXT,
+                "Linked" TEXT,
+                "Periodo" TEXT,
+                "Ano" VARCHAR(10),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Tabela 'mcti_detections' recriada com sucesso com as colunas corretas!"
+    except Exception as e:
+        return f"Ocorreu um erro ao criar a tabela: {e}"
 
 @app.route("/")
 def index():
@@ -55,7 +61,27 @@ def configuracoes():
 def faq():
     return render_template('faq.html')
 
-# (O resto do seu código continua igual, sem alterações)
+# ===== ROTA DE TESTE (pode ser removida em segurança) =====
+@app.route('/debug-mcti')
+def debug_mcti():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM mcti_detections;')
+        colnames = [desc[0] for desc in cur.description]
+        detections = cur.fetchall()
+        cur.close()
+        conn.close()
+        results = []
+        for row in detections:
+            results.append(dict(zip(colnames, row)))
+        if not results:
+            return jsonify({"message": "A query foi executada com sucesso, mas a tabela 'mcti_detections' está vazia."})
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+# =========================================================
+
 @app.route("/api/run-search", methods=['POST'])
 def api_run_search():
     data = request.json

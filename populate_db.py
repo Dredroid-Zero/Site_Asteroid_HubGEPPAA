@@ -1,12 +1,19 @@
 import os
+import sys
 import csv
 import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
 
-CSV_FILE_PATH = 'mcti_data.csv'
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if not DATABASE_URL:
+    print("ERRO CRÍTICO: A variável de ambiente DATABASE_URL não foi encontrada.")
+    print("Verifique se o ficheiro .env está correto.")
+    sys.exit()
+
+CSV_FILE_PATH = 'mcti_data.csv'
 
 def populate_database():
     if not os.path.exists(CSV_FILE_PATH):
@@ -31,13 +38,33 @@ def populate_database():
     conn = None
     inserted_count = 0
     try:
+        print("URL do banco de dados encontrada. A conectar ao Supabase...")
         conn = psycopg2.connect(DATABASE_URL)
+        print("Conexão estabelecida com sucesso!")
         cur = conn.cursor()
+
+        # --- CÓDIGO PARA CRIAR A TABELA ADICIONADO AQUI ---
+        print("A verificar e a criar a tabela 'mcti_detections' se necessário...")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS mcti_detections (
+                id SERIAL PRIMARY KEY,
+                "Objeto" VARCHAR(50) UNIQUE NOT NULL,
+                "Observadores" TEXT,
+                "Equipe" TEXT,
+                "Localizacao" TEXT,
+                "Data" TEXT,
+                "Linked" TEXT,
+                "Periodo" TEXT,
+                "Ano" VARCHAR(10),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        print("Tabela pronta para receber dados.")
+        # --- FIM DO CÓDIGO DE CRIAÇÃO ---
 
         for i, row in enumerate(data_to_insert):
             print(f"  Inserindo linha {i + 1} de {total_rows}...", end='\r')
             
-            # Mapeamento atualizado, sem a coluna "Status"
             mapped_row = {
                 "Objeto": row.get("Objeto"),
                 "Observadores": row.get("Observadores"),
@@ -49,7 +76,6 @@ def populate_database():
                 "Ano": row.get("Ano")
             }
             
-            # Comando SQL atualizado, sem a coluna "Status"
             cur.execute("""
                 INSERT INTO mcti_detections ("Objeto", "Observadores", "Equipe", "Localizacao", "Data", "Linked", "Periodo", "Ano")
                 VALUES (%(Objeto)s, %(Observadores)s, %(Equipe)s, %(Localizacao)s, %(Data)s, %(Linked)s, %(Periodo)s, %(Ano)s)
