@@ -5,7 +5,10 @@ from dotenv import load_dotenv
 from services import run_full_search_logic
 
 load_dotenv()
-app = Flask(__name__)
+# ===== ALTERAÇÃO IMPORTANTE FEITA AQUI =====
+# Isto garante que o Vercel encontra os seus ficheiros CSS e JavaScript.
+app = Flask(__name__, static_folder='static')
+# ==========================================
 
 def get_db_connection():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
@@ -54,12 +57,30 @@ def minhas_tabelas():
 def configuracoes():
     return render_template('configuracoes.html')
 
-# ----- NOVA ROTA ADICIONADA AQUI -----
 @app.route("/faq")
 def faq():
-    """Renderiza a página de Perguntas Frequentes (FAQ)."""
     return render_template('faq.html')
-# ------------------------------------
+
+# ===== ROTA DE TESTE (pode ser removida em segurança) =====
+@app.route('/debug-mcti')
+def debug_mcti():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM mcti_detections;')
+        colnames = [desc[0] for desc in cur.description]
+        detections = cur.fetchall()
+        cur.close()
+        conn.close()
+        results = []
+        for row in detections:
+            results.append(dict(zip(colnames, row)))
+        if not results:
+            return jsonify({"message": "A query foi executada com sucesso, mas a tabela 'mcti_detections' está vazia."})
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+# =========================================================
 
 @app.route("/api/run-search", methods=['POST'])
 def api_run_search():
