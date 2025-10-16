@@ -9,7 +9,8 @@ function initializeMctiPage() {
     const keywordInput = document.getElementById('keyword-search-input');
 
     const filtroAno = document.getElementById('filtro-ano');
-    const filtroPeriodo = document.getElementById('filtro-periodo');
+    // 1. MUDANÇA: Referência ao novo ID e nome da variável
+    const filtroCampanha = document.getElementById('filtro-campanha');
     
     let allFilterOptions = {};
     let fullCampaignData = [];
@@ -17,17 +18,13 @@ function initializeMctiPage() {
     // --- INICIALIZAÇÃO DA PÁGINA ---
     async function initializePage() {
         try {
-            console.log("PASSO A: Iniciando busca por opções de filtro...");
             const response = await fetch('/api/mcti-filter-options');
             if (!response.ok) throw new Error('Falha ao carregar opções de filtro');
             
             allFilterOptions = await response.json();
             
-            // ===== PISTA DE DEPURAÇÃO 1 =====
-            console.log("PASSO B: Opções de filtro carregadas do servidor:", allFilterOptions);
-
             populateAnoDropdown(Object.keys(allFilterOptions));
-            filtroAno.disabled = false; // Ativa o menu de Ano
+            filtroAno.disabled = false;
 
         } catch (error) {
             console.error("ERRO ao inicializar a página:", error);
@@ -44,53 +41,49 @@ function initializeMctiPage() {
             option.textContent = ano;
             filtroAno.appendChild(option);
         });
-        console.log("PASSO C: Menu de 'Ano' populado com sucesso.");
     }
 
-    function updatePeriodoDropdown() {
+    // 2. MUDANÇA: Nome da função e lógica interna
+    function updateCampanhaDropdown() {
         const selectedAno = filtroAno.value;
-        filtroPeriodo.innerHTML = '<option selected value="">Selecione um Período...</option>';
-
-        // ===== PISTAS DE DEPURAÇÃO 2 =====
-        console.log(`PASSO D: Função 'updatePeriodoDropdown' foi chamada.`);
-        console.log(`PASSO E: Ano selecionado pelo usuário: "${selectedAno}" (tipo: ${typeof selectedAno})`);
-        console.log("PASSO F: Verificando o conteúdo de 'allFilterOptions' neste momento:", allFilterOptions);
-        console.log(`PASSO G: Tentando aceder a allFilterOptions["${selectedAno}"]:`, allFilterOptions[selectedAno]);
+        filtroCampanha.innerHTML = '<option selected value="">Selecione uma Campanha...</option>';
 
         if (selectedAno && allFilterOptions[selectedAno]) {
-            console.log("PASSO H: SUCESSO! Dados encontrados para o ano. Populando períodos...");
-            const periodosDoAno = allFilterOptions[selectedAno];
-            periodosDoAno.forEach(periodo => {
+            const campanhasDoAno = allFilterOptions[selectedAno];
+            campanhasDoAno.forEach(campanha => {
                 const option = document.createElement('option');
-                option.value = periodo;
-                option.textContent = periodo;
-                filtroPeriodo.appendChild(option);
+                option.value = campanha;
+                option.textContent = campanha;
+                filtroCampanha.appendChild(option);
             });
-            filtroPeriodo.disabled = false;
+            filtroCampanha.disabled = false;
         } else {
-            console.log("PASSO H: FALHA! Nenhum dado encontrado para este ano ou ano não selecionado.");
-            filtroPeriodo.disabled = true;
+            filtroCampanha.disabled = true;
         }
     }
 
     // --- LÓGICA DOS EVENTOS ---
-    filtroAno.addEventListener('change', updatePeriodoDropdown);
+    // 3. MUDANÇA: O evento 'change' agora chama a nova função
+    filtroAno.addEventListener('change', updateCampanhaDropdown);
     searchForm.addEventListener('submit', performInitialSearch);
     keywordInput.addEventListener('input', filterTableByKeyword);
 
-    // --- FUNÇÕES PRINCIPAIS (código omitido, continua igual) ---
+    // --- FUNÇÕES PRINCIPAIS ---
     async function performInitialSearch(event) {
         event.preventDefault();
         const ano = filtroAno.value;
-        const periodo = filtroPeriodo.value;
-        if (!ano || !periodo) {
-            alert('Por favor, selecione um Ano e um Período para iniciar a busca.');
+        // 4. MUDANÇA: Pega o valor da campanha e ajusta a validação
+        const campanha = filtroCampanha.value;
+        if (!ano || !campanha) {
+            alert('Por favor, selecione um Ano e uma Campanha para iniciar a busca.');
             return;
         }
-        const params = new URLSearchParams({ ano, periodo });
+        // 5. MUDANÇA: Envia 'campanha' como parâmetro para a API
+        const params = new URLSearchParams({ ano, campanha });
         const url = `/api/search-mcti?${params.toString()}`;
         try {
-            resultsCard.classList.add('d-none');
+            resultsCard.classList.add('d-none'); // Esconde o card de resultados antes da busca
+            // Adicionar um feedback de carregamento seria uma boa melhoria futura
             const response = await fetch(url);
             if (!response.ok) throw new Error('Erro ao buscar dados da campanha');
             fullCampaignData = await response.json();
@@ -100,30 +93,40 @@ function initializeMctiPage() {
             alert("Ocorreu um erro ao buscar os dados da campanha.");
         }
     }
+
     function filterTableByKeyword() {
         const searchTerm = keywordInput.value.toLowerCase();
+        // Filtra os dados da campanha completa
         const filteredData = fullCampaignData.filter(row => {
+            // Concatena todos os valores da linha em uma string e busca pelo termo
             return Object.values(row).join(' ').toLowerCase().includes(searchTerm);
         });
-        renderTable(filteredData, false);
+        renderTable(filteredData, false); // Re-renderiza a tabela sem resetar o cabeçalho
     }
+
     function renderTable(data, isNewSearch = true) {
         tableBody.innerHTML = '';
         resultsCard.classList.remove('d-none');
         resultsCount.textContent = `${data.length} de ${fullCampaignData.length} encontrado(s)`;
+        
         if (isNewSearch) {
-            keywordInput.value = '';
-            tableHead.innerHTML = '';
+            keywordInput.value = ''; // Limpa o campo de filtro
+            tableHead.innerHTML = ''; // Limpa o cabeçalho
         }
-        const columnOrder = ['Ano', 'Periodo', 'Objeto', 'Linked', 'Observadores', 'Equipe', 'Data', 'Localizacao'];
+
+        // 6. MUDANÇA: A ordem das colunas agora usa 'Campanha'
+        const columnOrder = ['Ano', 'Campanha', 'Objeto', 'Linked', 'Observadores', 'Equipe', 'Data', 'Localizacao'];
+
         if (data.length === 0) {
-            tableHead.innerHTML = ''; 
+            tableHead.innerHTML = ''; // Garante que o cabeçalho esteja vazio
             emptyMessage.classList.remove('d-none');
             document.querySelector('#mcti-results-card .table-responsive').classList.add('d-none');
             return;
         }
+
         emptyMessage.classList.add('d-none');
         document.querySelector('#mcti-results-card .table-responsive').classList.remove('d-none');
+
         if (isNewSearch && data.length > 0) {
             const trHead = document.createElement('tr');
             columnOrder.forEach(headerText => {
@@ -133,11 +136,23 @@ function initializeMctiPage() {
             });
             tableHead.appendChild(trHead);
         }
+
         data.forEach(row => {
             const trBody = document.createElement('tr');
             columnOrder.forEach(headerText => {
                 const td = document.createElement('td');
-                td.textContent = row[headerText] || '-';
+                // O código aqui já é dinâmico, então ele pegará row['Campanha'] automaticamente
+                let cellData = row[headerText] || '-';
+                // Lógica especial para a coluna 'Linked'
+                if (headerText === 'Linked' && cellData && cellData !== '-') {
+                    const link = document.createElement('a');
+                    link.href = cellData;
+                    link.textContent = 'Link';
+                    link.target = '_blank';
+                    td.appendChild(link);
+                } else {
+                    td.textContent = cellData;
+                }
                 trBody.appendChild(td);
             });
             tableBody.appendChild(trBody);
@@ -147,4 +162,7 @@ function initializeMctiPage() {
     initializePage();
 }
 
-window.pageInitializers.push(initializeMctiPage);
+// Garante que o script só rode quando a página correta for carregada
+if (document.getElementById('mcti-search-form')) {
+    initializeMctiPage();
+}

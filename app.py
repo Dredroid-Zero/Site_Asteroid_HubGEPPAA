@@ -5,35 +5,40 @@ from dotenv import load_dotenv
 from services import run_full_search_logic
 
 load_dotenv()
-# Vamos manter a definição explícita da pasta estática, pois é boa prática.
 app = Flask(__name__, static_folder='static')
 
 def get_db_connection():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
 
-# ===== ROTA DE DIAGNÓSTICO ADICIONADA AQUI =====
-@app.route('/debug-list-files')
-def debug_list_files():
-    """
-    Lista todos os ficheiros e pastas a partir da raiz do projeto no servidor.
-    Isto vai nos mostrar se as pastas 'static' e 'templates' existem no deploy.
-    """
-    path = '.'
-    file_list = []
-    for root, dirs, files in os.walk(path):
-        for name in files:
-            file_list.append(os.path.join(root, name))
-        for name in dirs:
-            file_list.append(os.path.join(root, name) + '/')
-    
-    # Retorna a lista como um JSON para fácil visualização
-    return jsonify({
-        "message": "Estrutura de ficheiros no servidor da Vercel:",
-        "current_working_directory": os.getcwd(),
-        "directory_listing": file_list
-    })
-# ==================================================
+# A rota /init-db agora é menos importante, pois usamos o populate_db.py,
+# mas vamos atualizá-la por consistência.
+@app.route('/init-db')
+def init_db():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS mcti_detections;")
+        cur.execute('''
+            CREATE TABLE mcti_detections (
+                id SERIAL PRIMARY KEY,
+                "Objeto" VARCHAR(50) UNIQUE NOT NULL,
+                "Observadores" TEXT,
+                "Equipe" TEXT,
+                "Localizacao" TEXT,
+                "Data" TEXT,
+                "Linked" TEXT,
+                "Campanha" TEXT, -- <<< ALTERAÇÃO AQUI
+                "Ano" VARCHAR(10),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Tabela 'mcti_detections' recriada com sucesso com a coluna 'Campanha'!"
+    except Exception as e:
+        return f"Ocorreu um erro ao criar a tabela: {e}"
 
 @app.route("/")
 def index():
@@ -55,7 +60,26 @@ def configuracoes():
 def faq():
     return render_template('faq.html')
 
-# (O resto do seu código continua igual, sem alterações)
+# (Rotas de debug e api/run-search não precisam de alteração)
+@app.route('/debug-mcti')
+def debug_mcti():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM mcti_detections;')
+        colnames = [desc[0] for desc in cur.description]
+        detections = cur.fetchall()
+        cur.close()
+        conn.close()
+        results = []
+        for row in detections:
+            results.append(dict(zip(colnames, row)))
+        if not results:
+            return jsonify({"message": "A query foi executada com sucesso, mas a tabela 'mcti_detections' está vazia."})
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 @app.route("/api/run-search", methods=['POST'])
 def api_run_search():
     data = request.json
@@ -69,19 +93,23 @@ def api_run_search():
     results = full_df.to_dict('records')
     return jsonify(results)
 
+# --- ALTERAÇÕES IMPORTANTES ABAIXO ---
+
 @app.route("/api/mcti-filter-options")
 def mcti_filter_options():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT DISTINCT "Ano", "Periodo" FROM mcti_detections WHERE "Ano" IS NOT NULL AND "Periodo" IS NOT NULL ORDER BY "Ano" DESC, "Periodo" ASC;')
+    # 1. Mudar a query SQL
+    cur.execute('SELECT DISTINCT "Ano", "Campanha" FROM mcti_detections WHERE "Ano" IS NOT NULL AND "Campanha" IS NOT NULL ORDER BY "Ano" DESC, "Campanha" ASC;')
     options_map = {}
-    for ano, periodo in cur.fetchall():
+    # 2. Mudar os nomes das variáveis para clareza
+    for ano, campanha in cur.fetchall():
         if ano not in options_map:
             options_map[ano] = []
-        if periodo and periodo.strip():
-            p_trimmed = periodo.strip()
-            if p_trimmed not in options_map[ano]:
-                    options_map[ano].append(p_trimmed)
+        if campanha and campanha.strip():
+            c_trimmed = campanha.strip()
+            if c_trimmed not in options_map[ano]:
+                    options_map[ano].append(c_trimmed)
     cur.close()
     conn.close()
     return jsonify(options_map)
@@ -89,17 +117,21 @@ def mcti_filter_options():
 @app.route("/api/search-mcti", methods=['GET'])
 def api_search_mcti():
     filtro_ano = request.args.get('ano', '')
-    filtro_periodo = request.args.get('periodo', '')
+    # 3. Mudar o parâmetro que vem da URL e o nome da variável
+    filtro_campanha = request.args.get('campanha', '')
 
-    if not filtro_ano or not filtro_periodo:
-        return jsonify({"error": "É necessário selecionar um Ano e um Período."}), 400
+    # 4. Mudar a validação e a mensagem de erro
+    if not filtro_ano or not filtro_campanha:
+        return jsonify({"error": "É necessário selecionar um Ano e uma Campanha."}), 400
 
+    # 5. Mudar a query SQL
     query = '''
         SELECT * FROM mcti_detections
-        WHERE "Ano" = %s AND TRIM("Periodo") = %s
+        WHERE "Ano" = %s AND TRIM("Campanha") = %s
         ORDER BY "Data" DESC;
     '''
-    params = (filtro_ano, filtro_periodo)
+    # 6. Mudar os parâmetros da query
+    params = (filtro_ano, filtro_campanha)
     
     conn = get_db_connection()
     cur = conn.cursor()
