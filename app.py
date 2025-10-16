@@ -5,14 +5,13 @@ from dotenv import load_dotenv
 from services import run_full_search_logic
 
 load_dotenv()
+# Adicionando o static_folder para garantir compatibilidade com Vercel
 app = Flask(__name__, static_folder='static')
 
 def get_db_connection():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
 
-# A rota /init-db agora é menos importante, pois usamos o populate_db.py,
-# mas vamos atualizá-la por consistência.
 @app.route('/init-db')
 def init_db():
     try:
@@ -60,26 +59,6 @@ def configuracoes():
 def faq():
     return render_template('faq.html')
 
-# (Rotas de debug e api/run-search não precisam de alteração)
-@app.route('/debug-mcti')
-def debug_mcti():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM mcti_detections;')
-        colnames = [desc[0] for desc in cur.description]
-        detections = cur.fetchall()
-        cur.close()
-        conn.close()
-        results = []
-        for row in detections:
-            results.append(dict(zip(colnames, row)))
-        if not results:
-            return jsonify({"message": "A query foi executada com sucesso, mas a tabela 'mcti_detections' está vazia."})
-        return jsonify(results)
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
 @app.route("/api/run-search", methods=['POST'])
 def api_run_search():
     data = request.json
@@ -93,23 +72,21 @@ def api_run_search():
     results = full_df.to_dict('records')
     return jsonify(results)
 
-# --- ALTERAÇÕES IMPORTANTES ABAIXO ---
-
 @app.route("/api/mcti-filter-options")
 def mcti_filter_options():
     conn = get_db_connection()
     cur = conn.cursor()
-    # 1. Mudar a query SQL
+    # <<< ALTERAÇÃO AQUI
     cur.execute('SELECT DISTINCT "Ano", "Campanha" FROM mcti_detections WHERE "Ano" IS NOT NULL AND "Campanha" IS NOT NULL ORDER BY "Ano" DESC, "Campanha" ASC;')
     options_map = {}
-    # 2. Mudar os nomes das variáveis para clareza
+    # <<< ALTERAÇÃO AQUI (nomes das variáveis)
     for ano, campanha in cur.fetchall():
         if ano not in options_map:
             options_map[ano] = []
         if campanha and campanha.strip():
             c_trimmed = campanha.strip()
             if c_trimmed not in options_map[ano]:
-                    options_map[ano].append(c_trimmed)
+                options_map[ano].append(c_trimmed)
     cur.close()
     conn.close()
     return jsonify(options_map)
@@ -117,20 +94,20 @@ def mcti_filter_options():
 @app.route("/api/search-mcti", methods=['GET'])
 def api_search_mcti():
     filtro_ano = request.args.get('ano', '')
-    # 3. Mudar o parâmetro que vem da URL e o nome da variável
+    # <<< ALTERAÇÃO AQUI
     filtro_campanha = request.args.get('campanha', '')
 
-    # 4. Mudar a validação e a mensagem de erro
+    # <<< ALTERAÇÃO AQUI
     if not filtro_ano or not filtro_campanha:
         return jsonify({"error": "É necessário selecionar um Ano e uma Campanha."}), 400
 
-    # 5. Mudar a query SQL
+    # <<< ALTERAÇÃO AQUI
     query = '''
         SELECT * FROM mcti_detections
         WHERE "Ano" = %s AND TRIM("Campanha") = %s
         ORDER BY "Data" DESC;
     '''
-    # 6. Mudar os parâmetros da query
+    # <<< ALTERAÇÃO AQUI
     params = (filtro_ano, filtro_campanha)
     
     conn = get_db_connection()

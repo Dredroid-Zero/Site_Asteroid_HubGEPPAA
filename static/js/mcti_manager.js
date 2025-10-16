@@ -9,7 +9,7 @@ function initializeMctiPage() {
     const keywordInput = document.getElementById('keyword-search-input');
 
     const filtroAno = document.getElementById('filtro-ano');
-    // 1. MUDANÇA: Referência ao novo ID e nome da variável
+    // <<< ALTERAÇÃO AQUI
     const filtroCampanha = document.getElementById('filtro-campanha');
     
     let allFilterOptions = {};
@@ -43,7 +43,7 @@ function initializeMctiPage() {
         });
     }
 
-    // 2. MUDANÇA: Nome da função e lógica interna
+    // <<< ALTERAÇÃO AQUI (nome da função e lógica interna)
     function updateCampanhaDropdown() {
         const selectedAno = filtroAno.value;
         filtroCampanha.innerHTML = '<option selected value="">Selecione uma Campanha...</option>';
@@ -63,7 +63,7 @@ function initializeMctiPage() {
     }
 
     // --- LÓGICA DOS EVENTOS ---
-    // 3. MUDANÇA: O evento 'change' agora chama a nova função
+    // <<< ALTERAÇÃO AQUI
     filtroAno.addEventListener('change', updateCampanhaDropdown);
     searchForm.addEventListener('submit', performInitialSearch);
     keywordInput.addEventListener('input', filterTableByKeyword);
@@ -72,18 +72,17 @@ function initializeMctiPage() {
     async function performInitialSearch(event) {
         event.preventDefault();
         const ano = filtroAno.value;
-        // 4. MUDANÇA: Pega o valor da campanha e ajusta a validação
+        // <<< ALTERAÇÃO AQUI
         const campanha = filtroCampanha.value;
         if (!ano || !campanha) {
             alert('Por favor, selecione um Ano e uma Campanha para iniciar a busca.');
             return;
         }
-        // 5. MUDANÇA: Envia 'campanha' como parâmetro para a API
+        // <<< ALTERAÇÃO AQUI
         const params = new URLSearchParams({ ano, campanha });
         const url = `/api/search-mcti?${params.toString()}`;
         try {
-            resultsCard.classList.add('d-none'); // Esconde o card de resultados antes da busca
-            // Adicionar um feedback de carregamento seria uma boa melhoria futura
+            resultsCard.classList.add('d-none');
             const response = await fetch(url);
             if (!response.ok) throw new Error('Erro ao buscar dados da campanha');
             fullCampaignData = await response.json();
@@ -93,40 +92,37 @@ function initializeMctiPage() {
             alert("Ocorreu um erro ao buscar os dados da campanha.");
         }
     }
-
+    
     function filterTableByKeyword() {
         const searchTerm = keywordInput.value.toLowerCase();
-        // Filtra os dados da campanha completa
         const filteredData = fullCampaignData.filter(row => {
-            // Concatena todos os valores da linha em uma string e busca pelo termo
             return Object.values(row).join(' ').toLowerCase().includes(searchTerm);
         });
-        renderTable(filteredData, false); // Re-renderiza a tabela sem resetar o cabeçalho
+        renderTable(filteredData, false);
     }
 
     function renderTable(data, isNewSearch = true) {
         tableBody.innerHTML = '';
         resultsCard.classList.remove('d-none');
         resultsCount.textContent = `${data.length} de ${fullCampaignData.length} encontrado(s)`;
-        
         if (isNewSearch) {
-            keywordInput.value = ''; // Limpa o campo de filtro
-            tableHead.innerHTML = ''; // Limpa o cabeçalho
+            keywordInput.value = '';
+            tableHead.innerHTML = '';
         }
-
-        // 6. MUDANÇA: A ordem das colunas agora usa 'Campanha'
+        
+        // <<< ALTERAÇÃO AQUI
         const columnOrder = ['Ano', 'Campanha', 'Objeto', 'Linked', 'Observadores', 'Equipe', 'Data', 'Localizacao'];
-
+        
         if (data.length === 0) {
-            tableHead.innerHTML = ''; // Garante que o cabeçalho esteja vazio
+            tableHead.innerHTML = ''; 
             emptyMessage.classList.remove('d-none');
             document.querySelector('#mcti-results-card .table-responsive').classList.add('d-none');
             return;
         }
-
+        
         emptyMessage.classList.add('d-none');
         document.querySelector('#mcti-results-card .table-responsive').classList.remove('d-none');
-
+        
         if (isNewSearch && data.length > 0) {
             const trHead = document.createElement('tr');
             columnOrder.forEach(headerText => {
@@ -136,23 +132,12 @@ function initializeMctiPage() {
             });
             tableHead.appendChild(trHead);
         }
-
+        
         data.forEach(row => {
             const trBody = document.createElement('tr');
             columnOrder.forEach(headerText => {
                 const td = document.createElement('td');
-                // O código aqui já é dinâmico, então ele pegará row['Campanha'] automaticamente
-                let cellData = row[headerText] || '-';
-                // Lógica especial para a coluna 'Linked'
-                if (headerText === 'Linked' && cellData && cellData !== '-') {
-                    const link = document.createElement('a');
-                    link.href = cellData;
-                    link.textContent = 'Link';
-                    link.target = '_blank';
-                    td.appendChild(link);
-                } else {
-                    td.textContent = cellData;
-                }
+                td.textContent = row[headerText] || '-';
                 trBody.appendChild(td);
             });
             tableBody.appendChild(trBody);
@@ -162,7 +147,7 @@ function initializeMctiPage() {
     initializePage();
 }
 
-// Garante que o script só rode quando a página correta for carregada
+// Lógica para garantir que o script certo rode na página certa.
 if (document.getElementById('mcti-search-form')) {
     initializeMctiPage();
 }
