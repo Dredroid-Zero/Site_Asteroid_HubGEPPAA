@@ -339,3 +339,59 @@ body.loading-active > *:not(.loading-overlay) {
     animation: pulse-glow 2s infinite;
     border-radius: 0.375rem; /* Garante que o brilho seja arredondado como o botão */
 }
+/* --- Estilos para o Tour Guiado --- */
+
+/* Fundo escurecido que cobre a página */
+.tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1040; /* Fica abaixo do pop-up mas acima do resto */
+}
+
+/* Classe adicionada ao elemento em destaque no tour */
+.tour-highlight {
+    position: relative; /* Necessário para o z-index funcionar */
+    z-index: 1041;      /* Fica acima do fundo escurecido */
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    border-radius: 0.375rem; /* O mesmo border-radius dos botões */
+    animation: tour-pulse 2s infinite;
+}
+
+/* --- Estilos para o Tour Guiado --- */
+
+/* Fundo escurecido que cobre a página */
+.tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1040; /* Fica abaixo do pop-up mas acima do resto */
+}
+
+/* Classe adicionada ao elemento em destaque no tour (o "piscar") */
+.tour-highlight {
+    position: relative; /* Necessário para o z-index funcionar */
+    z-index: 1041;      /* Fica acima do fundo escurecido */
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    border-radius: 0.375rem; /* O mesmo border-radius dos botões */
+    animation: tour-pulse 2s infinite;
+}
+
+/* A animação do "piscar" */
+@keyframes tour-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}

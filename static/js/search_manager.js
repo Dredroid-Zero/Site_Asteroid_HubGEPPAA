@@ -83,6 +83,32 @@ function initializeSearchPage() {
     let currentSearchResults = [];
     let isTourActive = false;
 
+    // ==========================================================
+    // >>> CÓDIGO MOVIDO E CORRIGIDO PARA AQUI <<<
+    // ==========================================================
+    // ----- FUNCIONALIDADE: RECEBER DADOS DO CATÁLOGO -----
+    function checkForPendingSearch() {
+        // 1. Procura na "memória de curto prazo" do navegador se há objetos à espera.
+        const pendingObjects = sessionStorage.getItem('pendingSearchObjects');
+        
+        // 2. Se encontrar objetos...
+        if (pendingObjects) {
+            console.log("Objetos recebidos do catálogo:", pendingObjects);
+            
+            // 3. Coloca os códigos na caixa de texto.
+            searchInput.value = pendingObjects;
+            
+            // 4. Limpa a memória para que isto não aconteça novamente se o utilizador recarregar a página.
+            sessionStorage.removeItem('pendingSearchObjects');
+            
+            // 5. Simula um clique no botão de busca para iniciar a pesquisa automaticamente!
+            searchButton.click();
+        }
+    }
+    // Chama a função assim que a página é inicializada
+    checkForPendingSearch();
+    // ----- FIM DA FUNCIONALIDADE -----
+
     // --- LÓGICA DE BUSCA ---
     searchForm.addEventListener('submit', async function(event) {
         event.preventDefault();
@@ -191,19 +217,19 @@ function initializeSearchPage() {
             const glossaryEntry = GLOSSARY_DATA[header];
             if (glossaryEntry) {
                 const popoverContent = `
-                    <div class="glossary-popover">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <p class="me-2 mb-0">${glossaryEntry.summary}</p>
-                            <button type="button" class="btn-close btn-close-white flex-shrink-0" onclick="window.closeAndHidePopover(this)"></button>
+                        <div class="glossary-popover">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <p class="me-2 mb-0">${glossaryEntry.summary}</p>
+                                <button type="button" class="btn-close btn-close-white flex-shrink-0" onclick="window.closeAndHidePopover(this)"></button>
+                            </div>
+                            <a href="${glossaryEntry.link}" target="_blank" class="btn btn-sm btn-outline-light mt-2 d-block">Saiba Mais</a>
                         </div>
-                        <a href="${glossaryEntry.link}" target="_blank" class="btn btn-sm btn-outline-light mt-2 d-block">Saiba Mais</a>
-                    </div>
                 `;
                 return `<th>${header}<button type="button" class="btn btn-link btn-sm p-0 ms-1 help-icon" 
-                                data-bs-toggle="popover" data-bs-trigger="focus"
-                                tabindex="0" data-bs-html="true" data-bs-title="${header}"
-                                data-bs-content='${popoverContent.replace(/'/g, "&apos;")}'>
-                            <i class="far fa-question-circle"></i></button></th>`;
+                                        data-bs-toggle="popover" data-bs-trigger="focus"
+                                        tabindex="0" data-bs-html="true" data-bs-title="${header}"
+                                        data-bs-content='${popoverContent.replace(/'/g, "&apos;")}'>
+                                    <i class="far fa-question-circle"></i></button></th>`;
             }
             return `<th>${header}</th>`;
         }).join('');

@@ -1,1 +1,1 @@
-dotenv
+psycopg2
