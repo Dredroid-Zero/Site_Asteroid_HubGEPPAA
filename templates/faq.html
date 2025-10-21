@@ -33,13 +33,25 @@
                 </h2>
                 <div id="collapseStatus" class="accordion-collapse collapse" aria-labelledby="headingStatus" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        O status do objeto revela em que fase da sua trajetória de descoberta ele se encontra. O MPC e o IASC utilizam essas categorias:
-                        <ul>
-                            <li><strong>Preliminar:</strong> Detecções que parecem válidas, mas ainda não foram totalmente verificadas.</li>
-                            <li><strong>Provisório:</strong> O MPC confirma que o objeto existe e lhe dá uma designação oficial provisória (ex: <code>2007 NJ</code>).</li>
-                            <li><strong>Numerado:</strong> A órbita torna-se bem determinada e o objeto recebe um número permanente (ex: <code>(550832)</code>).</li>
-                            <li><strong>Nomeado:</strong> O descobridor pode sugerir um nome, que é aprovado pela IAU (ex: <code>(550832) Silvanacopceski</code>).</li>
+                        <p>A coluna Status mostra em que fase o objeto se encontra atualmente dentro do processo de descoberta e confirmação astronômica. Essas categorias são usadas pelo IASC e pelo Minor Planet Center (MPC) para indicar o nível de verificação e reconhecimento oficial de cada detecção:</p>
+
+                        <ul style="margin-bottom: 1rem;">
+                            <li style="margin-bottom: 0.8rem;"><span style="color: #f1c40f; font-weight: bold;"> Preliminar:</span> A detecção ainda está em análise. As medições parecem válidas, mas o objeto não foi totalmente confirmado. Esses dados podem contribuir para uma nova detecção ou refinar a órbita de um objeto já conhecido.</li>
+                            <li>
+                                <span style="color: #e67e22;"> Provisório:</span>
+                                <p>O MPC confirma que o objeto é real e atribui uma designação provisória oficial (ex: <code>2007 NJ</code>). Essa designação pode ser nova ou relacionada a um objeto já existente, caso as novas medições complementem observações anteriores.</p>
+                                <p>
+                                    A coluna <strong>(*)</strong> indica se a detecção pode ser uma possível primeira observação do objeto. Para mais detalhes, consulte a pergunta:
+                                    <a href="#headingAsterisco" onclick="new bootstrap.Collapse(document.getElementById('collapseAsterisco')).show();">
+                                        O que é a coluna (*)?
+                                    </a>
+                                </p>
+                            </li>
+                            <li style="margin-bottom: 0.8rem;"><span style="color: #3498db; font-weight: bold;"> Numerado:</span> A órbita está bem determinada, e o MPC concede um número permanente (ex: <code>(550832)</code>).<br> Nesse ponto, o asteroide é oficialmente catalogado, e o crédito de descoberta é atribuído com base na primeira observação útil que permitiu calcular sua órbita.</li>
+                            <li style="margin-bottom: 0.8rem;"><span style="color: #2ecc71; font-weight: bold;"> Nomeado:</span> O asteroide já foi numerado e recebeu um nome oficial aprovado pela IAU (ex: <code>(550832) Silvanacopceski</code>).<br> Essa é a fase máxima de reconhecimento, indicando que o corpo foi confirmado, catalogado e nomeado oficialmente.</li>
                         </ul>
+
+                        <p><strong>💡 Observação:</strong> Nem todas as detecções seguem o mesmo percurso.<br> Uma observação preliminar pode ser associada a um objeto já existente, servindo apenas para melhorar sua órbita, sem que o participante seja considerado o descobridor oficial no futuro.</p>
                     </div>
                 </div>
             </div>
@@ -52,7 +64,11 @@
                 </h2>
                 <div id="collapseAsterisco" class="accordion-collapse collapse" aria-labelledby="headingAsterisco" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                         O asterisco (*) identifica a observação-chave que fez o sistema do MPC reconhecer um conjunto de imagens como um novo objeto. É como a “faísca” que inicia o processo de catalogação. É importante notar que isto não indica o crédito de descoberta, que só é decidido mais tarde.
+                        O asterisco <strong style="color:#f1c40f;">(*)</strong> indica a <strong style="color:#f1c40f;">primeira observação associada a uma designação provisória</strong> de um objeto, ou seja, quando o MPC atribui um <strong style="color:#f1c40f;">novo código temporário</strong> para aquele conjunto de medições.<br><br>
+                        Embora o <strong style="color:#f1c40f;">(*)</strong> possa sugerir que a observação do participante foi possivelmente a primeira, isso depende de várias outras variáveis, como observações anteriores ainda não reportadas ou associadas a outro objeto.<br><br>
+                        Portanto, o asterisco é apenas um indicativo e não garante oficialmente que a detecção foi a descoberta inicial.<br><br>
+                        O crédito de descoberta oficial só é definido posteriormente, quando o objeto recebe um <strong style="color:#f1c40f;">número permanente</strong>, considerando a observação mais antiga que permitiu determinar com precisão a órbita do corpo celeste.<br><br>
+                        Na coluna correspondente, o sistema registra <strong style="color:#f1c40f;">“Sim” ou “Não”</strong> para indicar se o <strong style="color:#f1c40f;">(*)</strong> foi associado à observação daquele participante, servindo como um marcador técnico útil para rastrear a origem das observações no sistema do MPC, dando uma ideia de prioridade, mas sem implicar certeza de descoberta.
                     </div>
                 </div>
             </div>
@@ -67,11 +83,14 @@
                 </h2>
                 <div id="collapseDesignacaoIAU" class="accordion-collapse collapse" aria-labelledby="headingDesignacaoIAU" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        É a “matrícula” oficial do objeto. Se a órbita ainda não é bem conhecida, ele recebe uma <strong>Designação Provisória</strong> (ex: <code>2007 NJ</code>). Quando a órbita se torna estável, o objeto pode receber um <strong>Número Permanente</strong> (ex: <code>(550832)</code>).
+                        A <strong>Designação IAU</strong> é como a “identidade oficial” de um asteroide ou outro objeto menor.<br><br>
+                        <strong>Designação Provisória</strong> (ex: <code>2007 NJ</code>): quando a órbita ainda não está bem definida, o objeto recebe um código temporário para acompanhamento.<br><br>
+                        <strong>Número Permanente</strong> (ex: <code>(550832)</code>): quando a órbita é bem determinada, o objeto recebe um número fixo, passando a ser oficialmente catalogado.<br><br>
+                        Essa identificação permite que astrônomos saibam qual objeto é qual em todas as observações, mesmo quando há muitas descobertas acontecendo ao mesmo tempo.
                     </div>
                 </div>
             </div>
-
+            
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingTipoOrbita">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTipoOrbita" aria-expanded="false" aria-controls="collapseTipoOrbita">
@@ -80,12 +99,19 @@
                 </h2>
                 <div id="collapseTipoOrbita" class="accordion-collapse collapse" aria-labelledby="headingTipoOrbita" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        É a “vizinhança” no Sistema Solar onde o objeto orbita. Exemplos: <strong>MBA</strong> (Cintura Principal, entre Marte e Júpiter), <strong>NEA</strong> (próximo da Terra) ou <strong>TNO</strong> (além de Netuno).
+                        O <strong>Tipo de Órbita</strong> indica a <strong>região do Sistema Solar</strong> onde o objeto se movimenta e <strong>com quais planetas ele interage</strong>. Cada tipo representa uma “vizinhança orbital” diferente: <br><br>
+                        <ul>
+                            <li>🌍 <strong style="color:#00bfff;">Sistema Solar Interno</strong> — objetos que orbitam próximos ao Sol ou à Terra, como: <ul><li><em>Atiras</em>, <em>Atens</em>, <em>Apolo</em> e <em>Amores</em> (conhecidos como <strong>asteroides próximos da Terra</strong>).</li></ul></li>
+                            <li>🔴 <strong style="color:#ff6347;">Objetos próximos a Marte</strong> — incluem: <ul><li><em>Hungria</em> e <em>Cruzadores de Marte</em>, que passam perto da órbita marciana.</li></ul></li>
+                            <li>🪐 <strong style="color:#f1c40f;">Sistema Solar Médio</strong> — região entre Marte e Júpiter, onde estão: <ul><li>os <em>asteroides do Cinturão Principal</em>, os <em>Hildas</em> e os <em>Troianos de Júpiter</em>.</li></ul></li>
+                            <li>❄️ <strong style="color:#9b59b6;">Sistema Solar Exterior</strong> — objetos além da órbita de Júpiter: <ul><li><em>TNOs</em> (<em>Trans-Neptunianos</em>) e outros <em>objetos distantes</em>, ainda em subclassificação.</li></ul></li>
+                        </ul>
+                        <p>Em resumo, o <strong>Tipo de Órbita</strong> mostra <strong>onde o objeto “mora” no Sistema Solar</strong>, ajudando os astrônomos a entender sua origem e o tipo de interação gravitacional que ele sofre.</p>
                     </div>
                 </div>
             </div>
             
-             <div class="accordion-item">
+            <div class="accordion-item">
                 <h2 class="accordion-header" id="headingNomeCompleto">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNomeCompleto" aria-expanded="false" aria-controls="collapseNomeCompleto">
                         🧭 O que é o 'Nome Completo'?
@@ -93,7 +119,10 @@
                 </h2>
                 <div id="collapseNomeCompleto" class="accordion-collapse collapse" aria-labelledby="headingNomeCompleto" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        É o nome oficial do objeto, quando atribuído. Apenas objetos já numerados recebem um nome, que é proposto pelos descobridores e aprovado pela IAU. Exemplo: <code>(550832) Silvanacopceski</code>.
+                        O <strong>Nome Completo</strong> é a forma oficial de identificação de um objeto quando ele <strong>já foi numerado e nomeado</strong> pela União Astronômica Internacional (<strong>IAU</strong>).<br><br>
+                        Apenas objetos com <strong>número permanente</strong> podem receber um nome, que é <strong>proposto pelos descobridores</strong> e passa por <strong>aprovação da IAU</strong> antes de se tornar oficial.<br><br>
+                        🔹 <em>Exemplo:</em> <code>(550832) Silvanacopceski</code><br><br>
+                        Esse nome reconhece oficialmente o objeto e homenageia o descobridor, instituição ou pessoa escolhida, tornando-o parte do catálogo permanente de corpos do Sistema Solar.
                     </div>
                 </div>
             </div>
@@ -108,7 +137,10 @@
                 </h2>
                 <div id="collapseDescricao" class="accordion-collapse collapse" aria-labelledby="headingDescricao" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        Funciona como a “certidão de nascimento” do objeto, indicando o observatório, a data da descoberta e quem foram os astrônomos creditados.
+                        A <strong>Descrição</strong> reúne as informações oficiais sobre a descoberta do objeto.<br><br>
+                        Ela indica <span style="color:#ffd166;"><strong>onde</strong></span> e <span style="color:#ffd166;"><strong>quando</strong></span> o asteroide foi detectado, além de <span style="color:#ffd166;"><strong>qual observatório ou programa</strong></span> foi responsável pela detecção.<br><br>
+                        Nos <strong>objetos ainda provisórios</strong>, a descrição apresenta o <span style="color:#ffd166;"><strong>local</strong></span> e a <span style="color:#ffd166;"><strong>data da observação inicial conhecidos até o momento</strong></span>, observando que o <strong>descobridor oficial</strong> só será definido quando o objeto for numerado.<br><br>
+                        Já nos <strong>objetos numerados ou nomeados</strong>, o texto costuma ser mais detalhado, incluindo também <span style="color:#ffd166;"><strong>a origem e o significado do nome atribuído</strong></span>, conforme registrado nos boletins oficiais da IAU.
                     </div>
                 </div>
             </div>
@@ -121,7 +153,7 @@
                 </h2>
                 <div id="collapseIncerteza" class="accordion-collapse collapse" aria-labelledby="headingIncerteza" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                       É a “nota de confiança” da órbita, numa escala de 0 (muito confiável) a 9 (muito incerta). Um valor 0 é como um trilho de trem bem definido; um valor 9 é como tentar prever o voo de uma folha ao vento.
+                        É a “nota de confiança” da órbita, numa escala de 0 (muito confiável) a 9 (muito incerta). Um valor 0 é como um trilho de trem bem definido; um valor 9 é como tentar prever o voo de uma folha ao vento.
                     </div>
                 </div>
             </div>
@@ -199,7 +231,7 @@
                 </h2>
                 <div id="collapseObsUtilizadas" class="accordion-collapse collapse" aria-labelledby="headingObsUtilizadas" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                       Nem todas as observações disponíveis são usadas no cálculo final de uma órbita. Este campo indica quantas observações foram selecionadas pelo MPC para compor a solução orbital apresentada.
+                        Nem todas as observações disponíveis são usadas no cálculo final de uma órbita. Este campo indica quantas observações foram selecionadas pelo MPC para compor a solução orbital apresentada.
                     </div>
                 </div>
             </div>
